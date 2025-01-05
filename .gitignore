@@ -1,6 +1,10 @@
 # Xcode
 .DS_Store
 xcuserdata/
+build
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcworkspace/contents.xcworkspacedata
 *.xcscmblueprint
 *.xccheckout
 build/
