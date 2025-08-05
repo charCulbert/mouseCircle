@@ -2,7 +2,7 @@
 
 A macOS menu bar app that shows a circle around your mouse cursor.
 
-![App Demo](images/mouseCircle.mp4)
+![App Demo](images/mouseCircle.mov)
 
 ## Features
 
