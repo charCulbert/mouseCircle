@@ -1,249 +1,310 @@
-//
-//  AppDelegate.swift
-//  mouseCircle
-//
-//  Created by Charlie Culbert on 1/5/25.
-//
-
 import SwiftUI
 import AppKit
 
-// MARK: - AppDelegate
+/**
+ * AppDelegate: Main application coordinator and entry point
+ * 
+ * This class manages the entire application:
+ * 1. Sets up the menu bar interface
+ * 2. Manages mouse tracking across the system
+ * 3. Coordinates with WindowManager to display the circle
+ * 4. Handles display configuration changes (monitors plugged/unplugged)
+ * 5. Manages application lifecycle
+ * 
+ */
 class AppDelegate: NSObject, NSApplicationDelegate {
+    // MARK: - Properties
+    
+    /// The menu bar icon
     var statusItem: NSStatusItem?
-    var circleWindow: NSWindow?
-    var mouseLocationObserver: Any?
-    var isClicked = false
-    var clickTimer: Timer?
+    
+    /// Manages the dropdown menu interface
+    private var menuManager: MenuManager?
+    
+    /// Manages overlay windows
+    var windowManager: WindowManager?
+    
+    /// System-wide mouse tracking observers
+    private var mouseLocationObserver: Any?    // Tracks mouse movement and clicks from other apps
+    private var localMouseObserver: Any?       // Tracks mouse events within our app
+    
+    /// Mouse state tracking
+    private var isClicked = false             // Whether mouse button is currently down
+    private var clickTimer: Timer?            // Timer for click animations
+    private var isMenuOpen = false            // Whether our menu is currently open
+    
+    /// Screen change management
+    private var isRecreatingWindows = false  // Prevents launching multiple simultaneous window recreation operations
+    
+    /// Current circle configuration (size, color, opacity, etc.)
+    /// When this changes, automatically update all circle views
     var configuration = CircleConfiguration() {
-            didSet { updateCircleView() }
+        didSet { 
+            windowManager?.updateAllViews() 
         }
+    }
 
-
+    // MARK: - Public Interface
+    
+    /**
+     * Reset mouse down state (for menu interactions)
+     */
+    func resetMouseState() {
+        isMenuOpen = true
+        isClicked = false
+        // Don't start animations during menu operations
+    }
+    
+    /**
+     * Called when menu closes
+     */
+    func menuDidClose() {
+        isMenuOpen = false
+        isClicked = false
+        // Don't start animations when menu closes - only actual mouse interactions should trigger animations
+    }
+    
+    /**
+     * Check if this mouse event is a slider interaction we should ignore
+     */
+    private func isSliderInteraction(_ event: NSEvent) -> Bool {
+        // If it's our menu and the menu is open, it's likely a slider
+        if isMenuOpen {
+            return true
+        }
+        
+        // If it's the color picker opacity slider specifically
+        if let window = event.window, window == NSColorPanel.shared {
+            // Only block opacity slider, not clicks on color areas
+            let location = event.locationInWindow
+            // Color picker opacity slider is typically at the bottom
+            return location.y < 50  // Rough estimate of slider area
+        }
+        
+        return false
+    }
+    
+    // MARK: - Application Lifecycle
+    
+    /**
+     * Called when the app finishes launching
+     * Initialize all the main components
+     */
     func applicationDidFinishLaunching(_ notification: Notification) {
-        setupMenuBar()
-        setupCircleWindow()
-        setupMouseTracking()
+        // Create the main component managers
+        windowManager = WindowManager(appDelegate: self)
+        menuManager = MenuManager(appDelegate: self)
+        
+        // Set up the user interface and functionality
+        setupMenuBar()                    // Create menu bar icon and dropdown
+        windowManager?.setupWindows()     // Create overlay windows on all displays
+        
+        // Apply initial configuration to all windows
+        windowManager?.updateAllViews()
+        
+        setupMouseTracking()             // Start monitoring mouse movements
+        setupScreenChangeNotifications() // Listen for display changes
     }
 
     // MARK: - Menu Bar Setup
-    func setupMenuBar() {
-        // Create status bar icon
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+    
+    /**
+     * Create the menu bar icon and dropdown menu
+     * This creates the small icon that appears in the top-right menu bar
+     */
+    private func setupMenuBar() {
+        // Create a menu bar item with standard square size
+        statusItem = NSStatusBar.system.statusItem(withLength: AppConstants.MenuBar.statusItemLength)
+        
+        // Set the icon image
         if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "circle", accessibilityDescription: "Mouse Circle")
+            button.image = NSImage(
+                systemSymbolName: AppConstants.MenuBar.iconName,
+                accessibilityDescription: AppConstants.MenuBar.iconAccessibilityDescription
+            )
         }
         
-        // Initialize main menu
-        let menu = NSMenu()
+        // Attach the dropdown menu to the menu bar item
+        statusItem?.menu = menuManager?.createMenu()
+    }
+
+    // MARK: - Mouse Tracking
+    
+    /**
+     * Set up system-wide mouse tracking
+     * This monitors mouse movements and clicks across all applications
+     */
+    func setupMouseTracking() {
+        // Don't set up tracking if it's already active
+        guard mouseLocationObserver == nil else { return }
         
-        // Add slider menu items
-        let sliderItems = [
-            ("Circle Size", 30.0, 600.0, Double(configuration.size), #selector(sizeSliderChanged(_:))),
-            ("Animation Intensity", 0.1, 1.0, Double(configuration.intensity), #selector(intensitySliderChanged(_:))),
-            ("Circle Thickness", 1.0, 10.0, Double(configuration.thickness), #selector(thicknessSliderChanged(_:))),
-            ("Circle Opacity", 0.1, 1.0, Double(configuration.opacity), #selector(opacitySliderChanged(_:)))
-        ]
-        
-        // Add all slider items to menu
-        for (title, min, max, current, action) in sliderItems {
-            menu.addItem(createSliderMenuItem(
-                title: title,
-                minValue: min,
-                maxValue: max,
-                currentValue: current,
-                action: action
-            ))
+        // Monitor mouse events from other apps
+        // Catches mouse movement when app doesn't have focus
+        mouseLocationObserver = NSEvent.addGlobalMonitorForEvents(
+            matching: [.mouseMoved, .leftMouseDown, .leftMouseUp, .leftMouseDragged]
+        ) { [weak self] event in
+            self?.handleMouseEvent(event)
         }
         
-        menu.addItem(NSMenuItem.separator())
-        
-        // Add animation type submenu
-        let animationMenuItem = NSMenuItem(title: "Animation Type", action: nil, keyEquivalent: "")
-        let animationSubmenu = NSMenu()
-        
-        for type in CircleConfiguration.AnimationType.allCases {
-            let item = NSMenuItem(title: type.rawValue, action: #selector(animationTypeChanged(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = type
-            item.state = (type == configuration.type) ? .on : .off  // Compare with current configuration type
-            animationSubmenu.addItem(item)
+        // Monitor mouse events within the app
+        localMouseObserver = NSEvent.addLocalMonitorForEvents(
+            matching: [.mouseMoved, .leftMouseDown, .leftMouseUp, .leftMouseDragged]
+        ) { [weak self] event in
+            // Don't track clicks on menu bar item
+            if let statusItem = self?.statusItem, 
+               let button = statusItem.button,
+               let window = event.window,
+               window == button.window,
+               event.type != .mouseMoved && event.type != .leftMouseDragged {
+                return event
+            }
+            
+            self?.handleMouseEvent(event)
+            return event  // Pass the event through to the system
         }
         
-        animationMenuItem.submenu = animationSubmenu
-        menu.addItem(animationMenuItem)
-        
-        // Add color submenu
-        let colorMenuItem = NSMenuItem(title: "Circle Color", action: nil, keyEquivalent: "")
-        colorMenuItem.submenu = createColorSubmenu()
-        menu.addItem(colorMenuItem)
-        
-        // Add quit item
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
-        
-        statusItem?.menu = menu
-    }
-
-
-      func createColorSubmenu() -> NSMenu {
-          let colorSubmenu = NSMenu()
-          let colors: [(String, NSColor)] = [
-              ("Red", .red),
-              ("Green", .green),
-              ("Blue", .blue),
-              ("Yellow", .yellow),
-              ("White", .white),
-              ("Black", .black)
-          ]
-
-          for (name, color) in colors {
-              let item = NSMenuItem(title: name, action: #selector(colorSelected(_:)), keyEquivalent: "")
-              item.target = self
-              item.representedObject = color
-              colorSubmenu.addItem(item)
-          }
-
-          return colorSubmenu
-      }
-
-    @objc func colorSelected(_ sender: NSMenuItem) {
-        if let color = sender.representedObject as? NSColor {
-            configuration.color = color
+        // Position circle at current mouse location
+        ThreadingHelpers.executeOnMainThread { [weak self] in
+            let screenLocation = CoordinateHelpers.getCurrentMouseLocation()
+            self?.windowManager?.updateMousePosition(screenLocation)
         }
-    }
-
-    func createSliderMenuItem(title: String, minValue: Double, maxValue: Double, currentValue: Double, action: Selector) -> NSMenuItem {
-        let menuItem = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-        let sliderView = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: 50))
-
-        let label = NSTextField(frame: NSRect(x: 18, y: 25, width: 164, height: 20))
-        label.stringValue = title
-        label.isBezeled = false
-        label.drawsBackground = false
-        label.isEditable = false
-        label.isSelectable = false
-        sliderView.addSubview(label)
-
-        let slider = NSSlider(frame: NSRect(x: 18, y: 5, width: 164, height: 20))
-        slider.minValue = minValue
-        slider.maxValue = maxValue
-        slider.doubleValue = currentValue
-        slider.target = self
-        slider.action = action
-        sliderView.addSubview(slider)
-
-        menuItem.view = sliderView
-        return menuItem
-    }
-
-
-
-    @objc func presetColorSelected(_ sender: NSButton) {
-        configuration.color = NSColor(cgColor: sender.layer!.backgroundColor!) ?? .green
-    }
-
-
-
-    @objc func sizeSliderChanged(_ sender: NSSlider) {
-        configuration.size = CGFloat(sender.doubleValue)
-    }
-
-    @objc func intensitySliderChanged(_ sender: NSSlider) {
-        configuration.intensity = CGFloat(sender.doubleValue)
-    }
-
-    @objc func thicknessSliderChanged(_ sender: NSSlider) {
-        configuration.thickness = CGFloat(sender.doubleValue)
     }
     
-    @objc func opacitySliderChanged(_ sender: NSSlider) {
-        configuration.opacity = CGFloat(sender.doubleValue)
-    }
-
-
-    @objc func animationTypeChanged(_ sender: NSMenuItem) {
-        guard let newType = sender.representedObject as? CircleConfiguration.AnimationType else { return }
-        
-        // Update the current animation type
-        configuration.type = newType
-        
-        // Only update checkmarks in animation submenu
-        if let menu = sender.menu {
-            for item in menu.items {
-                item.state = (item.representedObject as? CircleConfiguration.AnimationType == configuration.type) ? .on : .off
+    /**
+     * Process mouse events from the system
+     * This is called whenever the mouse moves or clicks anywhere on screen
+     * @param event: The mouse event from the system
+     */
+    private func handleMouseEvent(_ event: NSEvent) {
+        ThreadingHelpers.executeWithAutorelease {
+            guard let windowManager = self.windowManager else { return }
+            
+            let screenLocation = CoordinateHelpers.getCurrentMouseLocation()
+            
+            // Handle mouse events
+            switch event.type {
+            case .mouseMoved, .leftMouseDragged:
+                // Update circle position
+                windowManager.updateMousePosition(screenLocation)
+                
+            case .leftMouseDown:
+                // Handle clicks unless it's a slider
+                if !self.isSliderInteraction(event) {
+                    self.handleMouseDown()
+                }
+                
+            case .leftMouseUp:
+                // Handle releases unless it's a slider
+                if !self.isSliderInteraction(event) {
+                    self.handleMouseUp()
+                }
+                
+            default:
+                // Ignore other events
+                break
             }
         }
     }
-
-    func updateCircleView() {
-        if let circleView = circleWindow?.contentView as? CircleView {
-            circleView.circleSize = configuration.size
-            circleView.rippleIntensity = configuration.intensity
-            circleView.circleThickness = configuration.thickness
-            circleView.animationType = configuration.type
-            circleView.circleColor = configuration.color
-            circleView.circleOpacity = configuration.opacity
-        }
-    }
-
-    // MARK: - Window Setup
-    func setupCircleWindow() {
-        // Create window that spans the main screen
-        let screen = NSScreen.main!
-        circleWindow = NSWindow(
-            contentRect: screen.frame,
-            styleMask: [.borderless],
-            backing: .buffered,
-            defer: false
-        )
-        
-        // Configure window properties
-        configureWindowBehavior()
-        
-        // Set up circle view
-        circleWindow?.contentView = CircleView()
-        circleWindow?.makeKeyAndOrderFront(nil)
-    }
-
-    private func configureWindowBehavior() {
-        guard let window = circleWindow else { return }
-        // Set window to appear above other windows
-        window.level = NSWindow.Level(rawValue: NSWindow.Level.popUpMenu.rawValue + 2)
-        // Allow window to appear on all spaces and in full screen
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        // Make window transparent and click-through
-        window.backgroundColor = .clear
-        window.isOpaque = false
-        window.ignoresMouseEvents = true
-    }
-
-    func setupMouseTracking() {
-        mouseLocationObserver = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDown, .leftMouseUp, .leftMouseDragged]) { [weak self] event in
-            guard let self = self, let circleView = self.circleWindow?.contentView as? CircleView else { return }
-
-            switch event.type {
-                   case .mouseMoved, .leftMouseDragged:
-                       let screenLocation = NSEvent.mouseLocation
-                       circleView.updatePosition(screenLocation)
-                   case .leftMouseDown:
-                       self.handleMouseDown(circleView)
-                   case .leftMouseUp:
-                       self.handleMouseUp(circleView)
-                   default:
-                       break
-                   }
-        }
-    }
-
-    func handleMouseDown(_ circleView: CircleView) {
+    
+    /**
+     * Handle mouse button press
+     * Start the click animation
+     */
+    private func handleMouseDown() {
         isClicked = true
-        clickTimer?.invalidate()
-        circleView.startAnimation(isDown: true)
+        clickTimer?.invalidate()  // Cancel any existing click timer
+        windowManager?.startAnimation(isDown: true)
     }
-
-    func handleMouseUp(_ circleView: CircleView) {
+    
+    /**
+     * Handle mouse button release  
+     * End the click animation
+     **/
+    
+    private func handleMouseUp() {
         isClicked = false
-        circleView.startAnimation(isDown: false)
+        windowManager?.startAnimation(isDown: false)
+    }
+    
+    // MARK: - Display Management
+    
+    /**
+     * Set up notifications for display configuration changes
+     * This listens for when monitors are plugged in, unplugged, or reconfigured
+     */
+    private func setupScreenChangeNotifications() {
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,  // System notification
+            object: nil,                                                   // Listen to all objects
+            queue: .main                                                   // Handle on main thread
+        ) { [weak self] _ in
+            self?.screenConfigurationChanged()
+        }
+    }
+    
+    /**
+     * Handle when display configuration changes (monitors added/removed/reconfigured)
+     * This safely recreates all overlay windows for the new display setup
+     */
+    private func screenConfigurationChanged() {
+        // Prevent multiple screen change operations
+        guard !isRecreatingWindows else { return }
+        isRecreatingWindows = true
+        
+        // Stop mouse tracking during window recreation
+        removeMouseTracking()
+        
+        // Wait for screen changes to stabilize
+        ThreadingHelpers.executeOnMainThreadAfterDelay(AppConstants.Timing.screenChangeDebounceDelay) { [weak self] in
+            guard let self = self else { return }
+            guard self.isRecreatingWindows else { return }
+            
+            // Recreate overlay windows
+            self.windowManager?.recreateWindows()
+            
+            // Re-enable mouse tracking
+            ThreadingHelpers.executeOnMainThreadAfterDelay(AppConstants.Timing.mouseTrackingReenableDelay) { [weak self] in
+                guard let self = self else { return }
+                self.setupMouseTracking()
+                self.isRecreatingWindows = false
+            }
+        }
+    }
+    
+    /**
+     * Stop monitoring mouse events
+     * This is called during screen changes to prevent crashes
+     */
+    private func removeMouseTracking() {
+        // Remove global mouse event monitoring
+        if let observer = mouseLocationObserver {
+            NSEvent.removeMonitor(observer)
+            mouseLocationObserver = nil
+        }
+        
+        // Remove local mouse event monitoring
+        if let observer = localMouseObserver {
+            NSEvent.removeMonitor(observer)
+            localMouseObserver = nil
+        }
+    }
+    
+    /**
+     * Called when the application is about to quit
+     * Clean up all resources
+     */
+    func applicationWillTerminate(_ notification: Notification) {
+        // Stop mouse tracking
+        removeMouseTracking()
+        
+        // Clean up window manager and close all windows
+        windowManager?.cleanup()
+        windowManager = nil
+        
+        // Clean up menu manager
+        menuManager = nil
+        
+        // Remove all notification observers
+        NotificationCenter.default.removeObserver(self)
     }
 }

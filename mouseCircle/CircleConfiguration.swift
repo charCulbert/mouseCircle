@@ -1,24 +1,26 @@
-//
-//  CircleConfiguration.swift
-//  mouseCircle
-//
-//  Created by Charlie Culbert on 1/6/25.
-//
-
-
 import AppKit
 
+/**
+ * CircleConfiguration: Data model that holds all circle appearance and behavior settings
+ **/
 struct CircleConfiguration {
-    var size: CGFloat = 100
-    var intensity: CGFloat = 0.5
-    var thickness: CGFloat = 4
-    var type: AnimationType = .singleRipple
-    var color: NSColor = .green
-    var opacity: CGFloat = 0.6
+    // MARK: - Circle Appearance Properties
     
-
-    enum AnimationType: String, CaseIterable {
-        case singleRipple = "Single Ripple"
-        case pulseOnClick = "Pulse On Click"
-    }
+    /// Size of the circle in pixels (diameter)
+    var size: CGFloat = AppConstants.Circle.defaultSize
+    
+    /// Color of the circle (uses system colors for consistency)
+    var color: NSColor = AppConstants.Colors.defaultColor
+    
+    /// Thickness of the circle outline in pixels
+    var thickness: CGFloat = AppConstants.Circle.defaultThickness
+    
+    // MARK: - Animation Properties
+    
+    /// Type of animation to show when clicking (uses enum from Constants.swift)
+    var type: AnimationType = .singleRipple
+    
+    /// How intense the animation effect should be (scale multiplier)
+    var intensity: CGFloat = AppConstants.Animation.defaultIntensity
+    
 }
