@@ -2,13 +2,11 @@
 
 A macOS menu bar app that shows a circle around your mouse cursor.
 
-![App Demo](images/demo.gif)
+![App Demo](images/mouseCircle.gif)
 
 ## What it does
 
 MouseCircle displays a customizable circle that follows your mouse cursor across all screens. When you click, it shows an animation effect.
-
-![Circle Example](images/circle-example.png)
 
 ## Features
 
@@ -18,7 +16,7 @@ MouseCircle displays a customizable circle that follows your mouse cursor across
 - Customizable animation intensity
 - Lives in the menu bar
 
-![Menu Screenshot](images/menu.png)
+![Menu Screenshot](images/menuBar.png)
 
 ## Installation
 
@@ -34,7 +32,7 @@ Click the circle icon in your menu bar to:
 - Pick circle color
 - Switch between Ripple and Pulse animations
 
-![Settings](images/settings.png)
+![Settings](images/colorPicker.png)
 
 ## Requirements
 
@@ -43,4 +41,3 @@ Click the circle icon in your menu bar to:
 
 ## License
 
-[Add your license here]
