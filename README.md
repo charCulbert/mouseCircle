@@ -1,6 +1,6 @@
 # MouseCircle
 
-A macOS menu bar app that shows a circle around your mouse cursor. Useful for presentations / screen recoring demos.
+A macOS menu bar app that shows a circle around your mouse cursor. Useful for presentations / screen recoring demos, or for visual feedback when using a eye tracker with Talon for example.
 
 ![App Demo](images/mouseCircle.mp4)
 
