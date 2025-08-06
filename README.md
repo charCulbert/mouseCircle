@@ -2,7 +2,7 @@
 
 A macOS menu bar app that shows a circle around your mouse cursor. 
 
-This is useful for presentations, or for visual feedback when using a eye tracker with Talon for example.
+This is useful for presentations, or for visual feedback when using a eye tracker with [Talon](https://talonvoice.com/) for example.
 
 ![App Demo](images/mouseCircle.mp4)
 
