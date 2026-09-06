@@ -39,6 +39,8 @@ enum AppConstants {
         static let screenChangeDebounce: TimeInterval = 0.4
         /// While our own menu is open no mouse events reach us, so we poll instead.
         static let menuPollingInterval: TimeInterval = 1.0 / 60.0
+        /// A shortcut held longer than this is a "hold", which flips the circle back on release.
+        static let shortcutHoldThreshold: TimeInterval = 0.4
     }
 
     enum MenuBar {

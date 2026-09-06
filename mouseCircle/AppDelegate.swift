@@ -11,7 +11,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var isMouseDown = false
 
     private let hotKeyCenter = HotKeyCenter()
-    private var isShortcutHeld = false
+    /// When the shortcut went down, or nil while it is up.
+    private var shortcutPressedAt: Date?
     /// Set while the shortcut recorder is open so the current shortcut can be re-typed.
     var isShortcutSuspended = false {
         didSet { registerShortcut() }
@@ -188,17 +189,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotKeyCenter.register(isShortcutSuspended ? nil : configuration.shortcut)
     }
 
+    /// The circle flips as soon as the key goes down. A tap leaves it that way; a hold
+    /// flips it back on release, so holding gives a momentary hide (or show).
     /// Key repeat can deliver several presses for one hold, so only the first one counts.
     private func shortcutPressed() {
-        guard !isShortcutHeld else { return }
-        isShortcutHeld = true
+        guard shortcutPressedAt == nil else { return }
+        shortcutPressedAt = Date()
         isCircleVisible.toggle()
     }
 
     private func shortcutReleased() {
-        guard isShortcutHeld else { return }
-        isShortcutHeld = false
-        if configuration.shortcutMode == .hold {
+        guard let pressedAt = shortcutPressedAt else { return }
+        shortcutPressedAt = nil
+        if Date().timeIntervalSince(pressedAt) >= AppConstants.Timing.shortcutHoldThreshold {
             isCircleVisible.toggle()
         }
     }

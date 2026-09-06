@@ -12,7 +12,6 @@ struct CircleConfiguration: Equatable {
 
     /// Global shortcut for hiding and showing the circle. nil means none.
     var shortcut: HotKey? = .default
-    var shortcutMode: ShortcutMode = .toggle
 
     /// sRGB red, green, blue, alpha. NSColor isn't Codable, so the colour is stored this way.
     private var rgba: [Double] = CircleConfiguration.components(of: AppConstants.Circle.defaultColor)
@@ -51,7 +50,7 @@ struct CircleConfiguration: Equatable {
 /// throwing away everything the user had saved.
 extension CircleConfiguration: Codable {
     private enum CodingKeys: String, CodingKey {
-        case size, thickness, intensity, animation, shortcut, shortcutMode, rgba
+        case size, thickness, intensity, animation, shortcut, rgba
     }
 
     init(from decoder: Decoder) throws {
@@ -61,7 +60,6 @@ extension CircleConfiguration: Codable {
         thickness = try container.decodeIfPresent(Double.self, forKey: .thickness) ?? thickness
         intensity = try container.decodeIfPresent(Double.self, forKey: .intensity) ?? intensity
         animation = try container.decodeIfPresent(AnimationType.self, forKey: .animation) ?? animation
-        shortcutMode = try container.decodeIfPresent(ShortcutMode.self, forKey: .shortcutMode) ?? shortcutMode
         rgba = try container.decodeIfPresent([Double].self, forKey: .rgba) ?? rgba
         // A saved null means "no shortcut"; a missing key means the default.
         if container.contains(.shortcut) {
@@ -76,7 +74,6 @@ extension CircleConfiguration: Codable {
         try container.encode(intensity, forKey: .intensity)
         try container.encode(animation, forKey: .animation)
         try container.encode(shortcut, forKey: .shortcut)   // encodes null when nil
-        try container.encode(shortcutMode, forKey: .shortcutMode)
         try container.encode(rgba, forKey: .rgba)
     }
 }

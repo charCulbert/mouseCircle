@@ -18,7 +18,7 @@ Handy when other people need to follow your pointer:
 - Works across multiple displays, including a circle straddling two screens
 - Click feedback: an expanding **Ripple** or a quick **Pulse**
 - Adjustable size, thickness, colour (with opacity) and animation intensity
-- Global keyboard shortcut (⌃⌥⌘M by default) to hide and show the circle, either as a toggle or only while the key is held
+- Global keyboard shortcut (⌃⌥⌘M by default): tap to hide or show the circle, hold to hide it only while the key is down
 - Remembers your settings between launches
 
 ## Install
@@ -33,7 +33,7 @@ No special permissions are needed. The app only listens for mouse movement and c
 
 Click the ring icon in the menu bar to adjust the circle. Everything updates live while the menu is open.
 
-Press ⌃⌥⌘M to hide or show the circle from anywhere. Choose **Keyboard Shortcut…** in the menu to record a different key, or to switch to hold mode, where the circle only flips while the key is down and comes back when you let go.
+Press ⌃⌥⌘M to hide or show the circle from anywhere. Hold the shortcut instead of tapping it and the circle only flips while the key is down, coming back when you let go. Choose **Keyboard Shortcut…** in the menu to record a different key.
 
 ## License
 

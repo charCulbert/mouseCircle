@@ -1,13 +1,14 @@
 import AppKit
 import Carbon
 
-/// A small window for choosing the hide/show shortcut and what it does.
+/// A small window for choosing the hide/show shortcut.
 final class ShortcutSettingsWindowController: NSWindowController, NSWindowDelegate {
     private unowned let appDelegate: AppDelegate
 
     private let recorder = ShortcutRecorderView()
-    private let modePopUp = NSPopUpButton(frame: .zero, pullsDown: false)
-    private let explanationLabel = NSTextField(wrappingLabelWithString: "")
+    private let explanationLabel = NSTextField(wrappingLabelWithString:
+        "Tap the shortcut to hide or show the circle. Hold it down instead and the circle flips only until you let go."
+    )
 
     init(appDelegate: AppDelegate) {
         self.appDelegate = appDelegate
@@ -57,20 +58,12 @@ final class ShortcutSettingsWindowController: NSWindowController, NSWindowDelega
         recorderRow.orientation = .horizontal
         recorderRow.spacing = 8
 
-        for mode in ShortcutMode.allCases {
-            modePopUp.addItem(withTitle: mode.displayName)
-            modePopUp.lastItem?.representedObject = mode.rawValue
-        }
-        modePopUp.target = self
-        modePopUp.action = #selector(modeChanged)
-
         explanationLabel.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
         explanationLabel.textColor = .secondaryLabelColor
         explanationLabel.preferredMaxLayoutWidth = 280
 
         let grid = NSGridView(views: [
             [label("Shortcut:"), recorderRow],
-            [label("Behaviour:"), modePopUp],
             [NSGridCell.emptyContentView, explanationLabel]
         ])
         grid.rowSpacing = 10
@@ -101,10 +94,7 @@ final class ShortcutSettingsWindowController: NSWindowController, NSWindowDelega
     }
 
     private func sync() {
-        let configuration = appDelegate.configuration
-        recorder.hotKey = configuration.shortcut
-        modePopUp.selectItem(at: ShortcutMode.allCases.firstIndex(of: configuration.shortcutMode) ?? 0)
-        explanationLabel.stringValue = configuration.shortcutMode.explanation
+        recorder.hotKey = appDelegate.configuration.shortcut
     }
 
     // MARK: Actions
@@ -113,13 +103,6 @@ final class ShortcutSettingsWindowController: NSWindowController, NSWindowDelega
         recorder.stopRecording()
         recorder.hotKey = nil
         appDelegate.configuration.shortcut = nil
-    }
-
-    @objc private func modeChanged() {
-        guard let rawValue = modePopUp.selectedItem?.representedObject as? String,
-              let mode = ShortcutMode(rawValue: rawValue) else { return }
-        appDelegate.configuration.shortcutMode = mode
-        explanationLabel.stringValue = mode.explanation
     }
 
     @objc private func done() {

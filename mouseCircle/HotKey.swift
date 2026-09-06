@@ -90,26 +90,6 @@ struct HotKey: Codable, Equatable {
     }
 }
 
-/// What the shortcut does.
-enum ShortcutMode: String, Codable, CaseIterable {
-    case toggle
-    case hold
-
-    var displayName: String {
-        switch self {
-        case .toggle: return "Toggle when pressed"
-        case .hold: return "Show or hide while held"
-        }
-    }
-
-    var explanation: String {
-        switch self {
-        case .toggle: return "Press the shortcut to hide the circle. Press it again to bring it back."
-        case .hold: return "While the shortcut is held the circle is hidden if it was showing, or shown if it was hidden. Let go to return to normal."
-        }
-    }
-}
-
 /// Registers one system-wide hot key using Carbon, which works from a sandboxed app
 /// without any accessibility or input monitoring permission.
 final class HotKeyCenter {
