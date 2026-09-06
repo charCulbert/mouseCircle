@@ -60,7 +60,9 @@ final class ShortcutSettingsWindowController: NSWindowController, NSWindowDelega
 
         explanationLabel.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
         explanationLabel.textColor = .secondaryLabelColor
-        explanationLabel.preferredMaxLayoutWidth = 280
+        // Pin the width so the wrapped height is computed for the width it actually gets.
+        explanationLabel.preferredMaxLayoutWidth = 240
+        explanationLabel.widthAnchor.constraint(equalToConstant: 240).isActive = true
 
         let grid = NSGridView(views: [
             [label("Shortcut:"), recorderRow],
