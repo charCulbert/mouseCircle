@@ -1,277 +1,143 @@
-import SwiftUI
 import AppKit
+import QuartzCore
 
-/**
- * CircleView: Custom view that draws and animates the mouse circle
- * 
- * This class handles:
- * 1. Drawing the circle at the mouse position
- * 2. Animating click effects (ripples, pulses)
- * 3. Updating appearance when settings change
- *
- */
-class CircleView: NSView {
-    // MARK: - Visual Properties
-    
-    /// Color of the circle
-    var circleColor: NSColor = AppConstants.Colors.defaultColor {
-        didSet { needsDisplay = true }  // Trigger redraw when color changes
-    }
-    
-    // MARK: - Initialization
-    
+/// Draws the circle with Core Animation layers so moving it costs nothing more than
+/// updating a layer position, and click effects are animated by the compositor rather
+/// than by redrawing a screen-sized view every frame.
+final class CircleView: NSView {
+    private let ringLayer = CAShapeLayer()
+    private let rippleLayer = CAShapeLayer()
+    private var configuration = CircleConfiguration()
+
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
+        wantsLayer = true
+        layerContentsRedrawPolicy = .never
+
+        for shape in [rippleLayer, ringLayer] {
+            shape.fillColor = nil
+            shape.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+            layer?.addSublayer(shape)
+        }
+        rippleLayer.opacity = 0
+        apply(configuration)
     }
-    
+
     required init?(coder: NSCoder) {
-        super.init(coder: coder)
-    }
-    
-    /// Current position of the circle center in window coordinates
-    var circlePosition = NSPoint(x: 100, y: 100)
-    
-    /// Size of the circle in pixels (diameter)
-    var circleSize: CGFloat = AppConstants.Circle.defaultSize {
-        didSet { needsDisplay = true }
-    }
-    
-    /// How intense animation effects should be (scale multiplier)
-    var rippleIntensity: CGFloat = AppConstants.Animation.defaultIntensity {
-        didSet { 
-            needsDisplay = true 
-        }
-    }
-    
-    /// Thickness of the circle outline in pixels
-    var circleThickness: CGFloat = AppConstants.Circle.defaultThickness {
-        didSet { needsDisplay = true }
-    }
-    
-    // MARK: - Animation State
-    
-    /// Current progress of animation (0.0 = start, 1.0 = complete)
-    var animationProgress: CGFloat = 0
-    
-    /// What type of animation to show when clicking
-    var animationType: AnimationType = .singleRipple
-    
-    /// Whether the mouse button is currently pressed
-    var isMouseDown = false
-    
-    /// When the current animation started (used for timing)
-    private var animationStartTime: Date?
-    
-    // MARK: - Cleanup
-    
-    /**
-     * Clean up when view is deallocated
-     */
-    deinit {
-        animationStartTime = nil
+        fatalError("CircleView is created in code only")
     }
 
-    // MARK: - Public Interface
-    
-    /**
-     * Update the circle position when mouse moves
-     * @param point: New position in window coordinates
-     */
-    func updatePosition(_ point: NSPoint) {
-        // Check if view is still attached to a window
-        guard window != nil else { return }
-        
-        circlePosition = point
-        
-        // Schedule a redraw on the main thread
-        ThreadingHelpers.executeOnMainThread { [weak self] in
-            self?.needsDisplay = true
-        }
-    }
-    
-    /**
-     * Update all circle properties from configuration
-     * @param config: New configuration to apply
-     */
-    func update(with config: CircleConfiguration) {
-        // Check if view is still attached to a window
-        guard window != nil else { return }
-        
-        
-        // Apply all configuration values
-        self.circleSize = config.size
-        self.rippleIntensity = config.intensity
-        self.circleThickness = config.thickness
-        self.animationType = config.type
-        self.circleColor = config.color
-        
-        // Schedule a redraw
-        ThreadingHelpers.executeOnMainThread { [weak self] in
-            self?.needsDisplay = true
-        }
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        updateContentsScale()
     }
 
-    /**
-     * Start a click animation
-     * @param isDown: true when mouse pressed, false when released
-     */
-    func startAnimation(isDown: Bool) {
-        // Check if view is still attached to a window
-        guard window != nil else { 
-            return 
-        }
-        
-        // Reset animation state
-        animationProgress = 0
-        isMouseDown = isDown
-        animationStartTime = Date()
-        
-        
-        // Start the animation loop
-        animate()
+    override func viewDidChangeBackingProperties() {
+        super.viewDidChangeBackingProperties()
+        updateContentsScale()
     }
 
-    // MARK: - Animation Logic
-    
-    /**
-     * Run one frame of the animation loop
-     * This is called repeatedly to create animation
-     */
-    private func animate() {
-        // Check if animation is still valid
-        guard let startTime = animationStartTime, window != nil else { 
-            return 
-        }
-        
-        // Calculate elapsed time
-        let elapsedTime = Date().timeIntervalSince(startTime)
-        let oldProgress = animationProgress
-        
-        // Update animation progress
-        switch animationType {
-        case .singleRipple:
-            // Only animate the ripple effect after mouse button is released
-            if !isMouseDown {
-                animationProgress = min(CGFloat(elapsedTime / AppConstants.Animation.rippleDuration), 1.0)
+    /// Shape layers rasterise at their own scale, so match the display or the ring looks blurry on Retina.
+    private func updateContentsScale() {
+        let scale = window?.backingScaleFactor ?? 2
+        ringLayer.contentsScale = scale
+        rippleLayer.contentsScale = scale
+    }
+
+    // MARK: Public interface
+
+    /// Apply size, thickness, colour and animation settings.
+    func apply(_ configuration: CircleConfiguration) {
+        self.configuration = configuration
+
+        let thickness = configuration.thickness
+        let extent = configuration.size + thickness
+        let bounds = CGRect(x: 0, y: 0, width: extent, height: extent)
+        let path = CGPath(ellipseIn: bounds.insetBy(dx: thickness / 2, dy: thickness / 2), transform: nil)
+
+        withoutAnimation {
+            for shape in [ringLayer, rippleLayer] {
+                shape.bounds = bounds
+                shape.path = path
+                shape.lineWidth = thickness
+                shape.strokeColor = configuration.color.cgColor
             }
-            
-        case .pulseOnClick:
-            // Animate the pulse while mouse is pressed
-            animationProgress = min(CGFloat(elapsedTime / AppConstants.Animation.pulseDuration), 1.0)
-        }
-        
-        
-        // Redraw the view with new animation progress
-        ThreadingHelpers.executeOnMainThread { [weak self] in
-            self?.needsDisplay = true
-        }
-        
-        // Check if animation should continue
-        let shouldContinue = (animationType == .pulseOnClick && animationProgress < 1) ||
-                           (animationType == .singleRipple && !isMouseDown && animationProgress < 1)
-        
-        
-        if shouldContinue {
-            // Schedule next frame
-            ThreadingHelpers.executeOnMainThreadAfterDelay(AppConstants.Timing.animationFrameRate) { [weak self] in
-                guard let self = self, self.window != nil else { return }
-                self.animate()
-            }
-        } else {
+            ringLayer.transform = CATransform3DIdentity
         }
     }
 
-    // MARK: - Drawing
-    
-    /**
-     * Draw the circle and any active animations
-     * This is called by macOS whenever the view needs to be redrawn
-     * @param dirtyRect: The area that needs to be redrawn (the app ignores this and draws everything)
-     */
-    override func draw(_ dirtyRect: NSRect) {
-        
-        // Draw animation effects
-        switch animationType {
-        case .singleRipple:
-            drawRippleEffect()
-        case .pulseOnClick:
-            drawPulseEffect()
+    /// Move the circle's centre to `point` (view coordinates).
+    func move(to point: CGPoint) {
+        withoutAnimation { ringLayer.position = point }
+    }
+
+    /// Mouse button went down at `point`: highlight the ring, and start the pulse if selected.
+    func mousePressed(at point: CGPoint) {
+        move(to: point)
+        animated(duration: AppConstants.Animation.pulseDuration) {
+            ringLayer.strokeColor = configuration.color.withAlphaComponent(1).cgColor
+            if configuration.animation == .pulse {
+                let shrink = 1 - pulseAmount
+                ringLayer.transform = CATransform3DMakeScale(shrink, shrink, 1)
+            }
         }
     }
-    
-    /**
-     * Draw the ripple effect animation
-     * Shows a base circle with an expanding ring when clicked
-     */
-    private func drawRippleEffect() {
-        // Create the main circle path
-        let baseCirclePath = createCirclePath(size: circleSize)
-        
-        // Set color - full opacity when mouse is down
-        if isMouseDown {
-            circleColor.withAlphaComponent(1.0).setStroke()
-        } else {
-            circleColor.setStroke()
+
+    /// Mouse button released at `point`: restore the ring and fire the ripple if selected.
+    func mouseReleased(at point: CGPoint) {
+        move(to: point)
+        animated(duration: AppConstants.Animation.pulseDuration) {
+            ringLayer.strokeColor = configuration.color.cgColor
+            ringLayer.transform = CATransform3DIdentity
         }
-        
-        // Draw the main circle
-        baseCirclePath.lineWidth = circleThickness
-        baseCirclePath.stroke()
-        
-        // Draw expanding ripple ring after mouse release
-        if animationProgress > 0 && !isMouseDown {
-            // Calculate ripple scale
-            let maxScale = AppConstants.Animation.rippleMaxScale
-            let effectiveScale = maxScale * rippleIntensity
-            let rippleSize = circleSize * (1.0 + animationProgress * effectiveScale)
-            let ripplePath = createCirclePath(size: rippleSize)
-            
-            
-            // Fade out the ripple as it expands
-            let fadeAmount = 1.0 - animationProgress
-            circleColor.withAlphaComponent(circleColor.alphaComponent * fadeAmount).setStroke()
-            ripplePath.lineWidth = circleThickness
-            ripplePath.stroke()
+        if configuration.animation == .ripple {
+            playRipple(at: point)
         }
     }
-    
-    /**
-     * Draw the pulse effect animation
-     * Shows a circle that shrinks when pressed, grows when released
-     */
-    private func drawPulseEffect() {
-        // Calculate pulse size
-        let pulseAmount = 0.4 * rippleIntensity + 0.1
-        let pulseSize: CGFloat
-        
-        if isMouseDown {
-            // Shrink when mouse is pressed
-            pulseSize = circleSize * (1.0 - pulseAmount * animationProgress)
-            circleColor.withAlphaComponent(1.0).setStroke()
-        } else {
-            // Grow back when mouse is released
-            pulseSize = circleSize * ((1.0 - pulseAmount) + pulseAmount * animationProgress)
-            circleColor.setStroke()
-        }
-        
-        // Create and draw the pulsing circle
-        let pulsePath = createCirclePath(size: pulseSize)
-        circleColor.setStroke()
-        pulsePath.lineWidth = circleThickness
-        pulsePath.stroke()
+
+    // MARK: Animations
+
+    /// How much the pulse shrinks the ring: 10% at zero intensity up to 50% at full.
+    private var pulseAmount: CGFloat {
+        0.4 * configuration.intensity + 0.1
     }
-    
-    /**
-     * Create a circular path centered at the circle position
-     * @param size: Diameter of the circle
-     * @return: NSBezierPath representing the circle
-     */
-    private func createCirclePath(size: CGFloat) -> NSBezierPath {
-        return NSBezierPath(ovalIn: NSRect(
-            x: circlePosition.x - size / 2,    // Center horizontally
-            y: circlePosition.y - size / 2,    // Center vertically
-            width: size,
-            height: size
-        ))
+
+    /// An expanding, fading copy of the ring that stays anchored at the click location.
+    private func playRipple(at point: CGPoint) {
+        withoutAnimation { rippleLayer.position = point }
+
+        let targetScale = 1 + AppConstants.Animation.rippleMaxScale * configuration.intensity
+
+        let grow = CABasicAnimation(keyPath: "transform.scale")
+        grow.fromValue = 1
+        grow.toValue = targetScale
+
+        let fade = CABasicAnimation(keyPath: "opacity")
+        fade.fromValue = 1
+        fade.toValue = 0
+
+        let group = CAAnimationGroup()
+        group.animations = [grow, fade]
+        group.duration = AppConstants.Animation.rippleDuration
+        group.timingFunction = CAMediaTimingFunction(name: .easeOut)
+
+        // The layer's model opacity stays at 0, so it vanishes as soon as the animation ends.
+        rippleLayer.removeAnimation(forKey: "ripple")
+        rippleLayer.add(group, forKey: "ripple")
+    }
+
+    private func withoutAnimation(_ changes: () -> Void) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        changes()
+        CATransaction.commit()
+    }
+
+    private func animated(duration: TimeInterval, _ changes: () -> Void) {
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(duration)
+        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
+        changes()
+        CATransaction.commit()
     }
 }

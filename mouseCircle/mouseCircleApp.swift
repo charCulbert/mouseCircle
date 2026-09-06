@@ -1,13 +1,12 @@
-import SwiftUI
+import AppKit
 
+/// Plain AppKit entry point. The app has no main window, only a status item and overlays.
 @main
-struct MouseCircleApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-
-    var body: some Scene {
-        Settings {
-        }
+enum MouseCircleApp {
+    static func main() {
+        let app = NSApplication.shared
+        let delegate = AppDelegate()
+        app.delegate = delegate
+        app.run()
     }
 }
-
-

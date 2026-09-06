@@ -1,19 +1,40 @@
-# MouseCircle
+# Mouse Circle
 
-A macOS menu bar app that shows a circle around your mouse cursor. 
+A tiny macOS menu bar app that draws a circle around your mouse cursor, on top of everything else on screen.
 
-This is useful for providing visual feedback when using a eye tracker and/or voice control with [Talon](https://talonvoice.com/) for example.
+![Mouse Circle demo](images/mouseCircle.gif)
 
-![App Demo](images/mouseCircle.mp4)
+Handy when other people need to follow your pointer:
+
+- Presentations and live demos
+- Screen recordings and tutorial videos
+- Remote screen sharing and pair programming
+- Eye-tracker or voice-control setups such as [Talon](https://talonvoice.com/), where you want clear feedback on where the cursor is
 
 ## Features
 
-- Lives in the menu bar
-- Works with multiple displays
-- Two animation types: Ripple and Pulse
-- Adjustable circle size, thickness, color, and animation intensity
+- Lives in the menu bar, no Dock icon
+- Sits above full-screen apps, menus, the Dock and the menu bar, so it never disappears
+- Works across multiple displays, including a circle straddling two screens
+- Click feedback: an expanding **Ripple** or a quick **Pulse**
+- Adjustable size, thickness, colour (with opacity) and animation intensity
+- Global keyboard shortcut (⌃⌥⌘M by default) to hide and show the circle, either as a toggle or only while the key is held
+- Remembers your settings between launches
 
-## Installation
+## Install
 
-- For now you'll have to build this yourself...
+Grab the latest build from [Releases](../../releases), unzip, and drag **Mouse Circle** to your Applications folder.
 
+Or build it yourself: open `mouseCircle.xcodeproj` in Xcode and press Run. Requires macOS 15 or later.
+
+No special permissions are needed. The app only listens for mouse movement and clicks, never keystrokes.
+
+## Usage
+
+Click the ring icon in the menu bar to adjust the circle. Everything updates live while the menu is open.
+
+Press ⌃⌥⌘M to hide or show the circle from anywhere. Choose **Keyboard Shortcut…** in the menu to record a different key, or to switch to hold mode, where the circle only flips while the key is down and comes back when you let go.
+
+## License
+
+GPL-3.0. See [LICENSE](LICENSE).

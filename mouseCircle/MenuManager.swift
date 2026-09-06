@@ -1,296 +1,220 @@
 import AppKit
 
-/**
- * Custom slider class that properly handles mouse events in menu context
- */
-class MenuSlider: NSSlider {
-    override func mouseDown(with event: NSEvent) {
-        isHighlighted = true
-        needsDisplay = true
-        
-        // Use custom mouse tracking to ensure proper press/release behavior
-        let mask: NSEvent.EventTypeMask = [.leftMouseUp, .leftMouseDragged]
-        var keepTracking = true
-        
-        while keepTracking {
-            if let nextEvent = window?.nextEvent(matching: mask) {
-                let point = convert(nextEvent.locationInWindow, from: nil)
-                
-                switch nextEvent.type {
-                case .leftMouseDragged:
-                    if bounds.contains(point) {
-                        // Calculate new value based on mouse position
-                        let ratio = (point.x - knobThickness/2) / (bounds.width - knobThickness)
-                        let clampedRatio = max(0, min(1, ratio))
-                        doubleValue = minValue + (maxValue - minValue) * clampedRatio
-                        
-                        // Send action
-                        if let target = target, let action = action {
-                            _ = target.perform(action, with: self)
-                        }
-                        needsDisplay = true
-                    }
-                    
-                case .leftMouseUp:
-                    isHighlighted = false
-                    needsDisplay = true
-                    keepTracking = false
-                    
-                default:
-                    break
-                }
-            } else {
-                keepTracking = false
-            }
-        }
-    }
-}
+/// Builds the menu bar dropdown and keeps it in sync with the current configuration.
+final class MenuManager: NSObject, NSMenuDelegate {
+    private unowned let appDelegate: AppDelegate
 
-/**
- * MenuManager: Creates and manages the menu bar dropdown interface
- * 
- * Handles the dropdown menu when clicking the menu bar icon, including
- * sliders for circle properties, animation type selection, and color picker.
- */
-class MenuManager: NSObject, NSMenuDelegate {
-    private weak var appDelegate: AppDelegate?
-    
+    let menu = NSMenu()
+
+    private let visibilityItem = NSMenuItem()
+    private let sizeSlider = SliderMenuItemView(title: "Size", range: AppConstants.Circle.sizeRange) {
+        "\(Int($0.rounded())) pt"
+    }
+    private let thicknessSlider = SliderMenuItemView(title: "Thickness", range: AppConstants.Circle.thicknessRange) {
+        "\(Int($0.rounded())) pt"
+    }
+    private let intensitySlider = SliderMenuItemView(title: "Intensity", range: AppConstants.Animation.intensityRange) {
+        "\(Int(($0 * 100).rounded()))%"
+    }
+    private let colorItem = NSMenuItem(title: "Colour…", action: #selector(chooseColor), keyEquivalent: "")
+    private var animationItems: [AnimationType: NSMenuItem] = [:]
+    private lazy var shortcutSettings = ShortcutSettingsWindowController(appDelegate: appDelegate)
+
     init(appDelegate: AppDelegate) {
         self.appDelegate = appDelegate
         super.init()
+        buildMenu()
+        syncWithConfiguration()
     }
-    
-    deinit {
-        // Clean up color picker notification observer
-        NotificationCenter.default.removeObserver(self)
-        appDelegate = nil
-    }
-    
-    func createMenu() -> NSMenu {
-        let menu = NSMenu()
+
+    // MARK: Building
+
+    private func buildMenu() {
         menu.delegate = self
-        
-        let sliderItems = [
-            ("Circle Size", 30.0, 800.0, Double(appDelegate?.configuration.size ?? 100), #selector(sizeSliderChanged(_:))),
-            ("Animation Intensity", 0.0, 1.0, Double(appDelegate?.configuration.intensity ?? 0.5), #selector(intensitySliderChanged(_:))),
-            ("Circle Thickness", 1.0, 30.0, Double(appDelegate?.configuration.thickness ?? 4), #selector(thicknessSliderChanged(_:)))
-        ]
-        
-        for (title, min, max, current, action) in sliderItems {
-            menu.addItem(createSliderMenuItem(
-                title: title,
-                minValue: min,
-                maxValue: max,
-                currentValue: current,
-                action: action
-            ))
-        }
-        
-        menu.addItem(NSMenuItem.separator())
-        
-        let animationMenuItem = NSMenuItem(title: "Animation Type", action: nil, keyEquivalent: "")
-        let animationSubmenu = NSMenu()
-        
+        menu.autoenablesItems = false
+
+        visibilityItem.target = self
+        visibilityItem.action = #selector(toggleVisibility)
+        menu.addItem(visibilityItem)
+        let shortcutItem = NSMenuItem(title: "Keyboard Shortcut…", action: #selector(showShortcutSettings), keyEquivalent: "")
+        shortcutItem.target = self
+        menu.addItem(shortcutItem)
+
+        menu.addItem(.separator())
+        menu.addItem(.sectionHeader(title: "Circle"))
+        sizeSlider.onChange = { [unowned self] in appDelegate.configuration.size = $0 }
+        thicknessSlider.onChange = { [unowned self] in appDelegate.configuration.thickness = $0 }
+        menu.addItem(sizeSlider.menuItem)
+        menu.addItem(thicknessSlider.menuItem)
+        colorItem.target = self
+        menu.addItem(colorItem)
+
+        menu.addItem(.separator())
+        menu.addItem(.sectionHeader(title: "Click Animation"))
         for type in AnimationType.allCases {
-            let item = NSMenuItem(title: type.rawValue, action: #selector(animationTypeChanged(_:)), keyEquivalent: "")
+            let item = NSMenuItem(title: type.displayName, action: #selector(selectAnimation(_:)), keyEquivalent: "")
             item.target = self
-            item.representedObject = type
-            item.state = (type == appDelegate?.configuration.type) ? .on : .off
-            animationSubmenu.addItem(item)
+            item.representedObject = type.rawValue
+            item.indentationLevel = 1
+            animationItems[type] = item
+            menu.addItem(item)
         }
-        
-        animationMenuItem.submenu = animationSubmenu
-        menu.addItem(animationMenuItem)
-        
-        let colorMenuItem = NSMenuItem(title: "Circle Color...", action: #selector(openColorPicker), keyEquivalent: "")
-        colorMenuItem.target = self
-        menu.addItem(colorMenuItem)
-        
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
-        
-        return menu
+        intensitySlider.onChange = { [unowned self] in appDelegate.configuration.intensity = $0 }
+        menu.addItem(intensitySlider.menuItem)
+
+        menu.addItem(.separator())
+        let resetItem = NSMenuItem(title: "Reset to Defaults", action: #selector(resetToDefaults), keyEquivalent: "")
+        resetItem.target = self
+        menu.addItem(resetItem)
+
+        menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: "Quit Mouse Circle", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
-    
-    // Note: createColorSubmenu method removed - now using color picker instead
-    
-    private func createSliderMenuItem(title: String, minValue: Double, maxValue: Double, currentValue: Double, action: Selector) -> NSMenuItem {
-        let menuItem = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-        let sliderView = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: 50))
-        
-        let label = NSTextField(frame: NSRect(x: 18, y: 25, width: 164, height: 20))
-        label.stringValue = title
-        label.isBezeled = false
-        label.drawsBackground = false
-        label.isEditable = false
-        label.isSelectable = false
-        sliderView.addSubview(label)
-        
-        let slider = MenuSlider(frame: NSRect(x: 18, y: 5, width: 164, height: 20))
-        slider.minValue = minValue
-        slider.maxValue = maxValue
-        slider.doubleValue = currentValue
-        slider.target = self
-        slider.action = action
-        
-        sliderView.addSubview(slider)
-        
-        menuItem.view = sliderView
-        return menuItem
-    }
-    
-    /**
-     * Open the system color picker
-     */
-    @objc private func openColorPicker() {
-        let colorPanel = NSColorPanel.shared
-        
-        // Remove any existing observers to prevent duplicates
-        NotificationCenter.default.removeObserver(
-            self,
-            name: NSColorPanel.colorDidChangeNotification,
-            object: colorPanel
-        )
-        NotificationCenter.default.removeObserver(
-            self,
-            name: NSWindow.willCloseNotification,
-            object: colorPanel
-        )
-        NotificationCenter.default.removeObserver(
-            self,
-            name: NSWindow.didResignKeyNotification,
-            object: colorPanel
-        )
-        NotificationCenter.default.removeObserver(
-            self,
-            name: NSWindow.didResignMainNotification,
-            object: colorPanel
-        )
-        
-        // Set current color in the picker
-        if let currentColor = appDelegate?.configuration.color {
-            let srgbColor = currentColor.usingColorSpace(.sRGB) ?? currentColor
-            colorPanel.color = srgbColor
-        }
-        
-        // Reset mouse state when opening color picker
-        appDelegate?.resetMouseState()
-        
-        colorPanel.showsAlpha = true
-        
-        // Set up callbacks for color changes and panel close/deactivate
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(colorPickerChanged(_:)),
-            name: NSColorPanel.colorDidChangeNotification,
-            object: colorPanel
-        )
-        
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(colorPickerWillClose(_:)),
-            name: NSWindow.willCloseNotification,
-            object: colorPanel
-        )
-        
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(colorPickerDidResignKey(_:)),
-            name: NSWindow.didResignKeyNotification,
-            object: colorPanel
-        )
-        
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(colorPickerDidResignMain(_:)),
-            name: NSWindow.didResignMainNotification,
-            object: colorPanel
-        )
-        
-        // Center the color picker on screen
-        if let mainScreen = NSScreen.main {
-            let screenFrame = mainScreen.visibleFrame
-            let panelSize = NSSize(width: 270, height: 400)
-            let panelOrigin = NSPoint(
-                x: screenFrame.midX - panelSize.width / 2,
-                y: screenFrame.midY - panelSize.height / 2
-            )
-            colorPanel.setFrameOrigin(panelOrigin)
-        }
-        
-        // Show the color picker
-        colorPanel.level = .floating
-        colorPanel.orderFront(nil)
-        colorPanel.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-    }
-    
-    /**
-     * Handle color picker changes
-     */
-    @objc private func colorPickerChanged(_ notification: Notification) {
-        if let colorPanel = notification.object as? NSColorPanel {
-            let selectedColor = colorPanel.color.usingColorSpace(.sRGB) ?? colorPanel.color
-            appDelegate?.configuration.color = selectedColor
+
+    /// Push the current configuration into every control.
+    private func syncWithConfiguration() {
+        let configuration = appDelegate.configuration
+        visibilityItem.title = appDelegate.isCircleVisible ? "Hide Circle" : "Show Circle"
+        // Display only: the shortcut itself is handled by HotKeyCenter.
+        visibilityItem.keyEquivalent = configuration.shortcut?.keyEquivalent ?? ""
+        visibilityItem.keyEquivalentModifierMask = configuration.shortcut?.modifierFlags ?? []
+        sizeSlider.value = configuration.size
+        thicknessSlider.value = configuration.thickness
+        intensitySlider.value = configuration.intensity
+        colorItem.image = swatchImage(for: configuration.color)
+        for (type, item) in animationItems {
+            item.state = type == configuration.animation ? .on : .off
         }
     }
-    
-    /**
-     * Handle color picker closing
-     */
-    @objc private func colorPickerWillClose(_ notification: Notification) {
-        appDelegate?.menuDidClose()
-    }
-    
-    /**
-     * Handle color picker losing key window status (when user clicks elsewhere)
-     */
-    @objc private func colorPickerDidResignKey(_ notification: Notification) {
-        appDelegate?.menuDidClose()
-    }
-    
-    /**
-     * Handle color picker losing main window status
-     */
-    @objc private func colorPickerDidResignMain(_ notification: Notification) {
-        appDelegate?.menuDidClose()
-    }
-    
-    @objc func sizeSliderChanged(_ sender: NSSlider) {
-        appDelegate?.configuration.size = CGFloat(sender.doubleValue)
-    }
-    
-    @objc func intensitySliderChanged(_ sender: NSSlider) {
-        appDelegate?.configuration.intensity = CGFloat(sender.doubleValue)
-    }
-    
-    @objc func thicknessSliderChanged(_ sender: NSSlider) {
-        appDelegate?.configuration.thickness = CGFloat(sender.doubleValue)
-    }
-    
-    
-    @objc func animationTypeChanged(_ sender: NSMenuItem) {
-        guard let newType = sender.representedObject as? AnimationType else { return }
-        
-        appDelegate?.configuration.type = newType
-        
-        if let menu = sender.menu {
-            for item in menu.items {
-                item.state = (item.representedObject as? AnimationType == appDelegate?.configuration.type) ? .on : .off
-            }
+
+    /// A small filled circle showing the current colour, drawn over a light/dark checker
+    /// so translucent colours read correctly.
+    private func swatchImage(for color: NSColor) -> NSImage {
+        let size = NSSize(width: 16, height: 16)
+        return NSImage(size: size, flipped: false) { rect in
+            let circle = NSBezierPath(ovalIn: rect.insetBy(dx: 1, dy: 1))
+            NSColor.textBackgroundColor.setFill()
+            circle.fill()
+            color.setFill()
+            circle.fill()
+            NSColor.separatorColor.setStroke()
+            circle.lineWidth = 1
+            circle.stroke()
+            return true
         }
     }
-    
-    // MARK: - NSMenuDelegate
-    
+
+    // MARK: Actions
+
+    @objc private func toggleVisibility() {
+        appDelegate.isCircleVisible.toggle()
+        syncWithConfiguration()
+    }
+
+    @objc private func showShortcutSettings() {
+        shortcutSettings.show()
+    }
+
+    @objc private func selectAnimation(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let type = AnimationType(rawValue: rawValue) else { return }
+        appDelegate.configuration.animation = type
+        syncWithConfiguration()
+    }
+
+    @objc private func resetToDefaults() {
+        appDelegate.configuration = CircleConfiguration()
+        syncWithConfiguration()
+    }
+
+    @objc private func chooseColor() {
+        let panel = NSColorPanel.shared
+        panel.showsAlpha = true
+        panel.isContinuous = true
+        panel.color = appDelegate.configuration.color
+        panel.setTarget(self)
+        panel.setAction(#selector(colorPanelDidChange(_:)))
+        panel.level = .floating
+
+        // We're a menu bar app with no windows of our own, so we have to activate to show a panel.
+        NSApp.activate()
+        panel.center()
+        panel.makeKeyAndOrderFront(nil)
+    }
+
+    @objc private func colorPanelDidChange(_ panel: NSColorPanel) {
+        appDelegate.configuration.color = panel.color
+        colorItem.image = swatchImage(for: panel.color)
+    }
+
+    // MARK: NSMenuDelegate
+
     func menuWillOpen(_ menu: NSMenu) {
-        // Reset mouse state when menu actually opens
-        appDelegate?.resetMouseState()
+        syncWithConfiguration()
+        appDelegate.menuDidOpen()
     }
-    
+
     func menuDidClose(_ menu: NSMenu) {
-        appDelegate?.menuDidClose()
-        // Force update all views to ensure settings are applied
-        appDelegate?.windowManager?.updateAllViews()
+        appDelegate.menuDidClose()
+    }
+}
+
+/// A labelled slider with a live value readout, hosted in a menu item.
+final class SliderMenuItemView: NSView {
+    let menuItem = NSMenuItem()
+    var onChange: ((Double) -> Void)?
+
+    var value: Double {
+        get { slider.doubleValue }
+        set {
+            slider.doubleValue = newValue
+            valueLabel.stringValue = format(newValue)
+        }
+    }
+
+    private let slider = NSSlider()
+    private let valueLabel = NSTextField(labelWithString: "")
+    private let format: (Double) -> String
+
+    private static let width: CGFloat = 240
+    private static let height: CGFloat = 46
+    private static let inset: CGFloat = 14
+
+    init(title: String, range: ClosedRange<Double>, format: @escaping (Double) -> String) {
+        self.format = format
+        super.init(frame: NSRect(x: 0, y: 0, width: Self.width, height: Self.height))
+
+        let contentWidth = Self.width - Self.inset * 2
+
+        let titleLabel = NSTextField(labelWithString: title)
+        titleLabel.font = .menuFont(ofSize: 0)
+        titleLabel.frame = NSRect(x: Self.inset, y: 24, width: contentWidth * 0.6, height: 18)
+        addSubview(titleLabel)
+
+        valueLabel.font = .monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+        valueLabel.textColor = .secondaryLabelColor
+        valueLabel.alignment = .right
+        valueLabel.frame = NSRect(x: Self.inset + contentWidth * 0.6, y: 25, width: contentWidth * 0.4, height: 16)
+        addSubview(valueLabel)
+
+        slider.minValue = range.lowerBound
+        slider.maxValue = range.upperBound
+        slider.controlSize = .small
+        slider.isContinuous = true
+        slider.target = self
+        slider.action = #selector(sliderMoved)
+        slider.frame = NSRect(x: Self.inset, y: 4, width: contentWidth, height: 20)
+        addSubview(slider)
+
+        menuItem.view = self
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("SliderMenuItemView is created in code only")
+    }
+
+    @objc private func sliderMoved() {
+        valueLabel.stringValue = format(slider.doubleValue)
+        onChange?(slider.doubleValue)
     }
 }

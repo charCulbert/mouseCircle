@@ -1,83 +1,66 @@
-import Foundation
 import AppKit
 
-// MARK: - Application Constants
-// App constants and configuration values
+/// App-wide tunables. Everything user-adjustable has its default here.
+enum AppConstants {
+    enum Circle {
+        static let defaultSize: Double = 184
+        static let sizeRange: ClosedRange<Double> = 30...800
+        static let defaultThickness: Double = 6
+        static let thicknessRange: ClosedRange<Double> = 1...30
+        /// Stored as sRGB components so the default survives round-tripping through UserDefaults.
+        static let defaultColor = NSColor(srgbRed: 0.20, green: 0.78, blue: 0.35, alpha: 0.5)
+    }
 
-struct AppConstants {
-    
-    // MARK: - Timing Constants (in seconds)
-    // Timing delays and frame rates
-    
-    struct Timing {
-        static let screenChangeDebounceDelay: TimeInterval = 0.3        // Wait time before processing screen changes
-        static let windowRecreationDelay: TimeInterval = 0.1           // Delay before recreating windows after cleanup
-        static let mouseTrackingReenableDelay: TimeInterval = 0.2      // Delay before re-enabling mouse tracking
-        static let animationFrameRate: TimeInterval = 1.0 / 60.0       // 60 FPS for smooth animations (16.67ms per frame)
+    enum Animation {
+        static let defaultIntensity: Double = 0.5
+        static let intensityRange: ClosedRange<Double> = 0...1
+        /// How long the expanding ripple ring is visible after a click.
+        static let rippleDuration: TimeInterval = 0.35
+        /// Extra scale the ripple reaches at full intensity (2.0 = grows to 3x the circle).
+        static let rippleMaxScale: CGFloat = 2.0
+        /// How long the pulse takes to shrink or grow back.
+        static let pulseDuration: TimeInterval = 0.12
     }
-    
-    // MARK: - Animation Settings
-    // Animation durations and scaling
-    
-    struct Animation {
-        static let rippleDuration: TimeInterval = 0.3        // How long the ripple effect lasts
-        static let pulseDuration: TimeInterval = 0.15        // How long the pulse effect lasts
-        static let rippleMaxScale: CGFloat = 2.0             // Maximum size multiplier for ripple effect (200% growth)
-        static let pulseMaxScale: CGFloat = 1.0              // Maximum size multiplier for pulse effect
-        static let defaultIntensity: CGFloat = 0.5           // Default animation intensity (50% of slider range 0.1-1.0)
-    }
-    
-    // MARK: - Window Configuration
-    // Window overlay settings
-    
-    struct Window {
-        // Window level above pop-up menus so circle is always visible
-        static let overlayLevel = NSWindow.Level(rawValue: NSWindow.Level.popUpMenu.rawValue + 2)
-        
-        // Window space and mode behavior
+
+    enum Window {
+        /// The shielding level sits above full-screen apps, menus, the Dock, the menu bar
+        /// and the screen saver, so the circle is visible over everything on screen.
+        static let overlayLevel = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
         static let collectionBehavior: NSWindow.CollectionBehavior = [
-            .canJoinAllSpaces,      // Appears on all desktop spaces
-            .fullScreenAuxiliary,   // Shows in full-screen mode
-            .stationary            // Doesn't move when user switches spaces
+            .canJoinAllSpaces,      // Follow the user across Spaces
+            .fullScreenAuxiliary,   // Show over other apps' full-screen windows
+            .stationary,            // Don't get swept up by Mission Control
+            .ignoresCycle           // Never appear in Cmd-` window cycling
         ]
-        
-        static let releaseWhenClosed = false    // Keep window in memory when closed (for proper ARC management)
     }
-    
-    // MARK: - Circle Display Settings
-    // Default values for how the circle looks and behaves
-    
-    struct Circle {
-        static let defaultSize: CGFloat = 184.0              // Default circle diameter in pixels (20% of slider range 30-800)
-        static let defaultThickness: CGFloat = 6.0           // Default line thickness in pixels (30% of slider range 1-20)
-        static let minimumValidScreenSize: CGFloat = 0       // Minimum screen dimension to be considered valid
+
+    enum Timing {
+        /// Display changes arrive in bursts; wait for them to settle before rebuilding windows.
+        static let screenChangeDebounce: TimeInterval = 0.4
+        /// While our own menu is open no mouse events reach us, so we poll instead.
+        static let menuPollingInterval: TimeInterval = 1.0 / 60.0
     }
-    
-    // MARK: - Color Definitions
-    
-    struct Colors {
-        static let defaultColor = NSColor.systemGreen.withAlphaComponent(0.5)
+
+    enum MenuBar {
+        static let iconName = "circle.circle"
+        static let hiddenIconName = "circle.dashed"
+        static let accessibilityDescription = "Mouse Circle"
     }
-    
-    // MARK: - Menu Bar Settings
-    // Menu bar configuration
-    
-    struct MenuBar {
-        static let statusItemLength = NSStatusItem.squareLength    // Standard square size for menu bar icon
-        static let iconName = "circle"                            // SF Symbol name for the menu bar icon
-        static let iconAccessibilityDescription = "Mouse Circle"   // Screen reader description
+
+    enum Storage {
+        static let configurationKey = "circleConfiguration"
     }
 }
 
-// MARK: - Animation Types
-// Available animation styles
+/// The visual effect played when the mouse button is clicked.
+enum AnimationType: String, CaseIterable, Codable {
+    case ripple
+    case pulse
 
-enum AnimationType: String, CaseIterable {
-    case singleRipple = "Ripple"           // One expanding ring on click
-    case pulseOnClick = "Pulse"            // Circle briefly grows and shrinks on click
-    
-    // Helper to get user-friendly display name
     var displayName: String {
-        return self.rawValue
+        switch self {
+        case .ripple: return "Ripple"
+        case .pulse: return "Pulse"
+        }
     }
 }
