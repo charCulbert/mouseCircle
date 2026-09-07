@@ -50,6 +50,22 @@
 - The app collects no data and asks for no permissions, so the privacy questionnaire is all "No".
 - Full app icon set is included.
 
+## Listing copy
+
+Description:
+
+> Mouse Circle is a menu bar app that draws a circle around your mouse.
+>
+> The circle is customizable in color, size and thickness. Animations of variable intensity can optionally be applied on left and right clicks.
+>
+> Useful for keeping track of your mouse, especially during presentations or screen recordings.
+>
+> • Works across all displays and over full-screen apps
+> • Global keyboard shortcut to hide and show the circle
+> • Remembers your settings
+
+Subtitle: "Highlight your cursor". Keywords: cursor, highlight, pointer, mouse, presentation, screen recording, demo, spotlight.
+
 ## Licensing note
 
 The GitHub source is GPL-3.0. As the sole copyright holder you can also sell the same code on the App Store without conflict, since the licence binds recipients, not you. If you ever accept outside contributions, either keep them out of App Store builds or switch the repo to a permissive licence like MIT first.
