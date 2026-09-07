@@ -25,7 +25,7 @@ Handy when other people need to follow your pointer:
 
 Grab the latest build from [Releases](../../releases), unzip, and drag **Mouse Circle** to your Applications folder.
 
-Or build it yourself: open `mouseCircle.xcodeproj` in Xcode and press Run. Requires macOS 15 or later.
+Or build it yourself: open `Mouse Circle.xcodeproj` in Xcode and press Run. Requires macOS 15 or later.
 
 No special permissions are needed. The app only listens for mouse movement and clicks, never keystrokes.
 

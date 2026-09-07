@@ -2,7 +2,7 @@
 
 ## Before any release
 
-1. Bump the version in Xcode: select the **mouseCircle** target → **General**.
+1. Bump the version in Xcode: select the **Mouse Circle** target → **General**.
    - **Version** (`MARKETING_VERSION`) is what users see, e.g. `1.0`, `1.1`.
    - **Build** (`CURRENT_PROJECT_VERSION`) must go up with every upload, e.g. `1`, `2`, `3`.
 2. Build and run once. Check the circle appears, the menu works, and ⌃⌥⌘M hides and shows it.
