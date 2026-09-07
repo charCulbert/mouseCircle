@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 
 /// Builds the menu bar dropdown and keeps it in sync with the current configuration.
 final class MenuManager: NSObject, NSMenuDelegate {
@@ -17,6 +18,7 @@ final class MenuManager: NSObject, NSMenuDelegate {
         "\(Int(($0 * 100).rounded()))%"
     }
     private let colorItem = NSMenuItem(title: "Colour…", action: #selector(chooseColor), keyEquivalent: "")
+    private let launchAtLoginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
     private var animationItems: [AnimationType: NSMenuItem] = [:]
     private lazy var shortcutSettings = ShortcutSettingsWindowController(appDelegate: appDelegate)
 
@@ -63,11 +65,16 @@ final class MenuManager: NSObject, NSMenuDelegate {
         menu.addItem(intensitySlider.menuItem)
 
         menu.addItem(.separator())
+        launchAtLoginItem.target = self
+        menu.addItem(launchAtLoginItem)
         let resetItem = NSMenuItem(title: "Reset to Defaults", action: #selector(resetToDefaults), keyEquivalent: "")
         resetItem.target = self
         menu.addItem(resetItem)
 
         menu.addItem(.separator())
+        let aboutItem = NSMenuItem(title: "About Mouse Circle", action: #selector(showAbout), keyEquivalent: "")
+        aboutItem.target = self
+        menu.addItem(aboutItem)
         menu.addItem(NSMenuItem(title: "Quit Mouse Circle", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 
@@ -85,6 +92,7 @@ final class MenuManager: NSObject, NSMenuDelegate {
         for (type, item) in animationItems {
             item.state = type == configuration.animation ? .on : .off
         }
+        launchAtLoginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
     }
 
     /// A small filled circle showing the current colour, drawn over a light/dark checker
@@ -120,6 +128,25 @@ final class MenuManager: NSObject, NSMenuDelegate {
               let type = AnimationType(rawValue: rawValue) else { return }
         appDelegate.configuration.animation = type
         syncWithConfiguration()
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        let service = SMAppService.mainApp
+        do {
+            if service.status == .enabled {
+                try service.unregister()
+            } else {
+                try service.register()
+            }
+        } catch {
+            NSSound.beep()
+        }
+        syncWithConfiguration()
+    }
+
+    @objc private func showAbout() {
+        NSApp.activate()
+        NSApp.orderFrontStandardAboutPanel(nil)
     }
 
     @objc private func resetToDefaults() {

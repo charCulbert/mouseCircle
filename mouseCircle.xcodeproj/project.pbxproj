@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		02EB51F52C8141C400178C36 /* mouseCircle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = mouseCircle.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		02EB51F52C8141C400178C36 /* Mouse Circle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mouse Circle.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -36,7 +36,7 @@
 		02EB51F62C8141C400178C36 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				02EB51F52C8141C400178C36 /* mouseCircle.app */,
+				02EB51F52C8141C400178C36 /* Mouse Circle.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -63,7 +63,7 @@
 			packageProductDependencies = (
 			);
 			productName = mouseCircle;
-			productReference = 02EB51F52C8141C400178C36 /* mouseCircle.app */;
+			productReference = 02EB51F52C8141C400178C36 /* Mouse Circle.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -266,7 +266,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircle;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "Mouse Circle";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -296,7 +296,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircle;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "Mouse Circle";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
