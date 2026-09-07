@@ -29,7 +29,7 @@ final class OverlayWindow: NSWindow {
 /// Owns one overlay window per display and fans out position, click and configuration
 /// changes to all of them.
 final class WindowManager {
-    private var windows: [OverlayWindow] = []
+    private(set) var windows: [OverlayWindow] = []
     private var configuration: CircleConfiguration
 
     /// Hide or show the circle on every display without tearing the windows down.
@@ -81,12 +81,12 @@ final class WindowManager {
         forEachCircle(at: screenPoint) { view, point in view.move(to: point) }
     }
 
-    func mousePressed(at screenPoint: NSPoint) {
-        forEachCircle(at: screenPoint) { view, point in view.mousePressed(at: point) }
+    func mousePressed(at screenPoint: NSPoint, button: MouseButton) {
+        forEachCircle(at: screenPoint) { view, point in view.mousePressed(at: point, button: button) }
     }
 
-    func mouseReleased(at screenPoint: NSPoint) {
-        forEachCircle(at: screenPoint) { view, point in view.mouseReleased(at: point) }
+    func mouseReleased(at screenPoint: NSPoint, button: MouseButton) {
+        forEachCircle(at: screenPoint) { view, point in view.mouseReleased(at: point, button: button) }
     }
 
     /// Every display gets the update, with the point converted into that window's coordinates.

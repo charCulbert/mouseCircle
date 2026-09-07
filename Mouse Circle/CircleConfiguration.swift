@@ -8,7 +8,22 @@ struct CircleConfiguration: Equatable {
     var thickness: Double = AppConstants.Circle.defaultThickness
     /// Click animation strength, 0...1.
     var intensity: Double = AppConstants.Animation.defaultIntensity
-    var animation: AnimationType = .ripple
+    var leftClickAnimation: AnimationType = .ripple
+    var rightClickAnimation: AnimationType = .pulse
+
+    func animation(for button: MouseButton) -> AnimationType {
+        switch button {
+        case .left: return leftClickAnimation
+        case .right: return rightClickAnimation
+        }
+    }
+
+    mutating func setAnimation(_ animation: AnimationType, for button: MouseButton) {
+        switch button {
+        case .left: leftClickAnimation = animation
+        case .right: rightClickAnimation = animation
+        }
+    }
 
     /// Global shortcut for hiding and showing the circle. nil means none.
     var shortcut: HotKey? = .default
@@ -50,7 +65,9 @@ struct CircleConfiguration: Equatable {
 /// throwing away everything the user had saved.
 extension CircleConfiguration: Codable {
     private enum CodingKeys: String, CodingKey {
-        case size, thickness, intensity, animation, shortcut, rgba
+        case size, thickness, intensity, leftClickAnimation, rightClickAnimation, shortcut, rgba
+        /// Pre-1.0 saves had a single animation; it becomes the left-click one.
+        case animation
     }
 
     init(from decoder: Decoder) throws {
@@ -59,7 +76,9 @@ extension CircleConfiguration: Codable {
         size = try container.decodeIfPresent(Double.self, forKey: .size) ?? size
         thickness = try container.decodeIfPresent(Double.self, forKey: .thickness) ?? thickness
         intensity = try container.decodeIfPresent(Double.self, forKey: .intensity) ?? intensity
-        animation = try container.decodeIfPresent(AnimationType.self, forKey: .animation) ?? animation
+        let legacy = try container.decodeIfPresent(AnimationType.self, forKey: .animation)
+        leftClickAnimation = try container.decodeIfPresent(AnimationType.self, forKey: .leftClickAnimation) ?? legacy ?? leftClickAnimation
+        rightClickAnimation = try container.decodeIfPresent(AnimationType.self, forKey: .rightClickAnimation) ?? rightClickAnimation
         rgba = try container.decodeIfPresent([Double].self, forKey: .rgba) ?? rgba
         // A saved null means "no shortcut"; a missing key means the default.
         if container.contains(.shortcut) {
@@ -72,7 +91,8 @@ extension CircleConfiguration: Codable {
         try container.encode(size, forKey: .size)
         try container.encode(thickness, forKey: .thickness)
         try container.encode(intensity, forKey: .intensity)
-        try container.encode(animation, forKey: .animation)
+        try container.encode(leftClickAnimation, forKey: .leftClickAnimation)
+        try container.encode(rightClickAnimation, forKey: .rightClickAnimation)
         try container.encode(shortcut, forKey: .shortcut)   // encodes null when nil
         try container.encode(rgba, forKey: .rgba)
     }

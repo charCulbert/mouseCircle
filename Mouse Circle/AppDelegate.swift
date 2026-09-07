@@ -3,12 +3,13 @@ import AppKit
 /// Wires everything together: the menu bar item, system-wide mouse tracking,
 /// display-change handling and the persisted configuration.
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var statusItem: NSStatusItem?
-    private var menuManager: MenuManager?
-    private var windowManager: WindowManager?
+    private(set) var statusItem: NSStatusItem?
+    private(set) var menuManager: MenuManager?
+    private(set) var windowManager: WindowManager?
 
     private var eventMonitors: [Any] = []
-    private var isMouseDown = false
+    /// The button currently held, if any. Only one click animation plays at a time.
+    private var pressedButton: MouseButton?
 
     private let hotKeyCenter = HotKeyCenter()
     /// When the shortcut went down, or nil while it is up.
@@ -163,20 +164,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged:
             windowManager.moveCircle(to: location)
             // If a mouse-up was swallowed (e.g. by a menu) don't leave the ring stuck highlighted.
-            if isMouseDown && NSEvent.pressedMouseButtons == 0 {
-                isMouseDown = false
-                windowManager.mouseReleased(at: location)
+            if let button = pressedButton, NSEvent.pressedMouseButtons == 0 {
+                pressedButton = nil
+                windowManager.mouseReleased(at: location, button: button)
             }
 
         case .leftMouseDown, .rightMouseDown:
-            guard !isMouseDown else { return }
-            isMouseDown = true
-            windowManager.mousePressed(at: location)
+            guard pressedButton == nil else { return }
+            let button: MouseButton = event.type == .leftMouseDown ? .left : .right
+            pressedButton = button
+            windowManager.mousePressed(at: location, button: button)
 
         case .leftMouseUp, .rightMouseUp:
-            guard isMouseDown else { return }
-            isMouseDown = false
-            windowManager.mouseReleased(at: location)
+            guard let button = pressedButton else { return }
+            pressedButton = nil
+            windowManager.mouseReleased(at: location, button: button)
 
         default:
             break
@@ -192,13 +194,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// The circle flips as soon as the key goes down. A tap leaves it that way; a hold
     /// flips it back on release, so holding gives a momentary hide (or show).
     /// Key repeat can deliver several presses for one hold, so only the first one counts.
-    private func shortcutPressed() {
+    func shortcutPressed() {
         guard shortcutPressedAt == nil else { return }
         shortcutPressedAt = Date()
         isCircleVisible.toggle()
     }
 
-    private func shortcutReleased() {
+    func shortcutReleased() {
         guard let pressedAt = shortcutPressedAt else { return }
         shortcutPressedAt = nil
         if Date().timeIntervalSince(pressedAt) >= AppConstants.Timing.shortcutHoldThreshold {
@@ -216,5 +218,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func rebuildOverlayWindows() {
         windowManager?.rebuildWindows()
+    }
+}
+
+/// A menu bar app has no windows to click on, so it has to bring itself forward before
+/// showing a panel. The cooperative `NSApp.activate()` can be declined by the system, and the
+/// forced form still works, so use it and accept the deprecation.
+enum AppActivation {
+    static func activate() {
+        NSApp.activate(ignoringOtherApps: true)
     }
 }

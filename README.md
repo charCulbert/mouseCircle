@@ -16,7 +16,7 @@ Handy when other people need to follow your pointer:
 - Lives in the menu bar, no Dock icon
 - Sits above full-screen apps, menus, the Dock and the menu bar, so it never disappears
 - Works across multiple displays, including a circle straddling two screens
-- Click feedback: an expanding **Ripple** or a quick **Pulse**
+- Click feedback, set separately for left and right clicks: **Ripple**, **Pulse**, **Flash** or none
 - Adjustable size, thickness, colour (with opacity) and animation intensity
 - Global keyboard shortcut (⌃⌥⌘M by default): tap to hide or show the circle, hold to hide it only while the key is down
 - Remembers your settings between launches
@@ -34,6 +34,14 @@ No special permissions are needed. The app only listens for mouse movement and c
 Click the ring icon in the menu bar to adjust the circle. Everything updates live while the menu is open.
 
 Press ⌃⌥⌘M to hide or show the circle from anywhere. Hold the shortcut instead of tapping it and the circle only flips while the key is down, coming back when you let go. Choose **Keyboard Shortcut…** in the menu to record a different key.
+
+## Development
+
+Open `Mouse Circle.xcodeproj` and press Run. Tests live in two targets: **Mouse CircleTests** runs inside the real app and drives the menu, overlay windows, colour panel and shortcut directly, and **Mouse CircleUITests** launches the app and clicks through the menu bar like a user. Run both with Cmd+U in Xcode, or:
+
+```
+xcodebuild test -project "Mouse Circle.xcodeproj" -scheme "Mouse Circle" -destination 'platform=macOS'
+```
 
 ## License
 

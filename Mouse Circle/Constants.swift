@@ -20,6 +20,8 @@ enum AppConstants {
         static let rippleMaxScale: CGFloat = 2.0
         /// How long the pulse takes to shrink or grow back.
         static let pulseDuration: TimeInterval = 0.12
+        /// How long the flash fill takes to fade after release.
+        static let flashFadeDuration: TimeInterval = 0.25
     }
 
     enum Window {
@@ -47,6 +49,10 @@ enum AppConstants {
         static let iconName = "circle.circle"
         static let hiddenIconName = "circle.dashed"
         static let accessibilityDescription = "Mouse Circle"
+        /// Slider rows line their text up with the menu's own text column.
+        static let sliderLeadingInset: CGFloat = 24
+        static let sliderTrailingInset: CGFloat = 16
+        static let sliderRowWidth: CGFloat = 260
     }
 
     enum Storage {
@@ -54,15 +60,40 @@ enum AppConstants {
     }
 }
 
-/// The visual effect played when the mouse button is clicked.
+/// The visual effect played when a mouse button is clicked.
 enum AnimationType: String, CaseIterable, Codable {
     case ripple
     case pulse
+    case flash
+    case none
 
     var displayName: String {
         switch self {
         case .ripple: return "Ripple"
         case .pulse: return "Pulse"
+        case .flash: return "Flash"
+        case .none: return "None"
+        }
+    }
+}
+
+/// The buttons that get their own click animation. Middle click is left out because
+/// trackpads don't have one.
+enum MouseButton: String, CaseIterable, Codable {
+    case left
+    case right
+
+    var displayName: String {
+        switch self {
+        case .left: return "Left Click"
+        case .right: return "Right Click"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .left: return "cursorarrow.click"
+        case .right: return "cursorarrow.click.2"
         }
     }
 }

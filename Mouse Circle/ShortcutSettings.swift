@@ -33,8 +33,7 @@ final class ShortcutSettingsWindowController: NSWindowController, NSWindowDelega
 
     func show() {
         sync()
-        // We're a menu bar app with no windows of our own, so we have to activate to take key input.
-        NSApp.activate()
+        AppActivation.activate()
         window?.center()
         window?.makeKeyAndOrderFront(nil)
     }
@@ -134,6 +133,8 @@ final class ShortcutRecorderView: NSView {
 
     override var intrinsicContentSize: NSSize { NSSize(width: 170, height: 24) }
     override var acceptsFirstResponder: Bool { true }
+    /// Let the first click start recording even if the app wasn't active yet.
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override var focusRingMaskBounds: NSRect { bounds }
 
     override func drawFocusRingMask() {

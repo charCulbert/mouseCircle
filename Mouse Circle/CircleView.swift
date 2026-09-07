@@ -5,9 +5,11 @@ import QuartzCore
 /// updating a layer position, and click effects are animated by the compositor rather
 /// than by redrawing a screen-sized view every frame.
 final class CircleView: NSView {
-    private let ringLayer = CAShapeLayer()
+    let ringLayer = CAShapeLayer()
     private let rippleLayer = CAShapeLayer()
     private var configuration = CircleConfiguration()
+    /// The button whose press animation is currently showing, so release can undo it.
+    private var pressedButton: MouseButton?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -63,6 +65,9 @@ final class CircleView: NSView {
                 shape.strokeColor = configuration.color.cgColor
             }
             ringLayer.transform = CATransform3DIdentity
+            ringLayer.fillColor = nil
+            rippleLayer.removeAnimation(forKey: "ripple")
+            pressedButton = nil
         }
     }
 
@@ -71,26 +76,41 @@ final class CircleView: NSView {
         withoutAnimation { ringLayer.position = point }
     }
 
-    /// Mouse button went down at `point`: highlight the ring, and start the pulse if selected.
-    func mousePressed(at point: CGPoint) {
+    /// A button went down at `point`: highlight the ring and start that button's animation.
+    func mousePressed(at point: CGPoint, button: MouseButton) {
         move(to: point)
+        let animation = configuration.animation(for: button)
+        guard animation != .none else { return }
+        pressedButton = button
+
         animated(duration: AppConstants.Animation.pulseDuration) {
             ringLayer.strokeColor = configuration.color.withAlphaComponent(1).cgColor
-            if configuration.animation == .pulse {
+            switch animation {
+            case .pulse:
                 let shrink = 1 - pulseAmount
                 ringLayer.transform = CATransform3DMakeScale(shrink, shrink, 1)
+            case .flash:
+                ringLayer.fillColor = configuration.color.withAlphaComponent(flashAlpha).cgColor
+            case .ripple, .none:
+                break
             }
         }
     }
 
-    /// Mouse button released at `point`: restore the ring and fire the ripple if selected.
-    func mouseReleased(at point: CGPoint) {
+    /// The button came back up at `point`: restore the ring and finish its animation.
+    func mouseReleased(at point: CGPoint, button: MouseButton) {
         move(to: point)
-        animated(duration: AppConstants.Animation.pulseDuration) {
+        guard pressedButton == button else { return }
+        pressedButton = nil
+        let animation = configuration.animation(for: button)
+
+        let duration = animation == .flash ? AppConstants.Animation.flashFadeDuration : AppConstants.Animation.pulseDuration
+        animated(duration: duration) {
             ringLayer.strokeColor = configuration.color.cgColor
             ringLayer.transform = CATransform3DIdentity
+            ringLayer.fillColor = nil
         }
-        if configuration.animation == .ripple {
+        if animation == .ripple {
             playRipple(at: point)
         }
     }
@@ -100,6 +120,11 @@ final class CircleView: NSView {
     /// How much the pulse shrinks the ring: 10% at zero intensity up to 50% at full.
     private var pulseAmount: CGFloat {
         0.4 * configuration.intensity + 0.1
+    }
+
+    /// How strongly the flash fills the circle: faint at zero intensity, solid-ish at full.
+    private var flashAlpha: CGFloat {
+        0.1 + 0.5 * configuration.intensity
     }
 
     /// An expanding, fading copy of the ring that stays anchored at the click location.
@@ -124,6 +149,11 @@ final class CircleView: NSView {
         // The layer's model opacity stays at 0, so it vanishes as soon as the animation ends.
         rippleLayer.removeAnimation(forKey: "ripple")
         rippleLayer.add(group, forKey: "ripple")
+    }
+
+    /// True while a ripple is playing. Used by tests.
+    var isRippling: Bool {
+        rippleLayer.animation(forKey: "ripple") != nil
     }
 
     private func withoutAnimation(_ changes: () -> Void) {

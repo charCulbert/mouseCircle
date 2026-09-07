@@ -19,7 +19,8 @@ final class MenuManager: NSObject, NSMenuDelegate {
     }
     private let colorItem = NSMenuItem(title: "Colour…", action: #selector(chooseColor), keyEquivalent: "")
     private let launchAtLoginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
-    private var animationItems: [AnimationType: NSMenuItem] = [:]
+    /// One radio group per mouse button, keyed by button then animation.
+    private var animationItems: [MouseButton: [AnimationType: NSMenuItem]] = [:]
     private lazy var shortcutSettings = ShortcutSettingsWindowController(appDelegate: appDelegate)
 
     init(appDelegate: AppDelegate) {
@@ -38,9 +39,7 @@ final class MenuManager: NSObject, NSMenuDelegate {
         visibilityItem.target = self
         visibilityItem.action = #selector(toggleVisibility)
         menu.addItem(visibilityItem)
-        let shortcutItem = NSMenuItem(title: "Keyboard Shortcut…", action: #selector(showShortcutSettings), keyEquivalent: "")
-        shortcutItem.target = self
-        menu.addItem(shortcutItem)
+        menu.addItem(makeItem("Keyboard Shortcut…", symbol: "keyboard", action: #selector(showShortcutSettings)))
 
         menu.addItem(.separator())
         menu.addItem(.sectionHeader(title: "Circle"))
@@ -53,12 +52,9 @@ final class MenuManager: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
         menu.addItem(.sectionHeader(title: "Click Animation"))
-        for type in AnimationType.allCases {
-            let item = NSMenuItem(title: type.displayName, action: #selector(selectAnimation(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = type.rawValue
-            item.indentationLevel = 1
-            animationItems[type] = item
+        for button in MouseButton.allCases {
+            let item = makeItem(button.displayName, symbol: button.symbolName, action: nil)
+            item.submenu = makeAnimationSubmenu(for: button)
             menu.addItem(item)
         }
         intensitySlider.onChange = { [unowned self] in appDelegate.configuration.intensity = $0 }
@@ -67,21 +63,43 @@ final class MenuManager: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
         launchAtLoginItem.target = self
         menu.addItem(launchAtLoginItem)
-        let resetItem = NSMenuItem(title: "Reset to Defaults", action: #selector(resetToDefaults), keyEquivalent: "")
-        resetItem.target = self
-        menu.addItem(resetItem)
+        menu.addItem(makeItem("Reset to Defaults", symbol: "arrow.counterclockwise", action: #selector(resetToDefaults)))
 
         menu.addItem(.separator())
-        let aboutItem = NSMenuItem(title: "About Mouse Circle", action: #selector(showAbout), keyEquivalent: "")
-        aboutItem.target = self
-        menu.addItem(aboutItem)
-        menu.addItem(NSMenuItem(title: "Quit Mouse Circle", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(makeItem("About Mouse Circle", symbol: "info.circle", action: #selector(showAbout)))
+        let quitItem = makeItem("Quit Mouse Circle", symbol: "power", action: #selector(NSApplication.terminate(_:)))
+        quitItem.target = nil
+        quitItem.keyEquivalent = "q"
+        menu.addItem(quitItem)
+    }
+
+    private func makeItem(_ title: String, symbol: String, action: Selector?) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+        item.target = self
+        item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+        return item
+    }
+
+    private func makeAnimationSubmenu(for button: MouseButton) -> NSMenu {
+        let submenu = NSMenu(title: button.displayName)
+        var items: [AnimationType: NSMenuItem] = [:]
+        for type in AnimationType.allCases {
+            let item = NSMenuItem(title: type.displayName, action: #selector(selectAnimation(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = AnimationChoice(button: button, animation: type)
+            items[type] = item
+            submenu.addItem(item)
+        }
+        animationItems[button] = items
+        return submenu
     }
 
     /// Push the current configuration into every control.
     private func syncWithConfiguration() {
         let configuration = appDelegate.configuration
-        visibilityItem.title = appDelegate.isCircleVisible ? "Hide Circle" : "Show Circle"
+        let visible = appDelegate.isCircleVisible
+        visibilityItem.title = visible ? "Hide Circle" : "Show Circle"
+        visibilityItem.image = NSImage(systemSymbolName: visible ? "eye.slash" : "eye", accessibilityDescription: nil)
         // Display only: the shortcut itself is handled by HotKeyCenter.
         visibilityItem.keyEquivalent = configuration.shortcut?.keyEquivalent ?? ""
         visibilityItem.keyEquivalentModifierMask = configuration.shortcut?.modifierFlags ?? []
@@ -89,8 +107,10 @@ final class MenuManager: NSObject, NSMenuDelegate {
         thicknessSlider.value = configuration.thickness
         intensitySlider.value = configuration.intensity
         colorItem.image = swatchImage(for: configuration.color)
-        for (type, item) in animationItems {
-            item.state = type == configuration.animation ? .on : .off
+        for (button, items) in animationItems {
+            for (type, item) in items {
+                item.state = type == configuration.animation(for: button) ? .on : .off
+            }
         }
         launchAtLoginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
     }
@@ -124,9 +144,8 @@ final class MenuManager: NSObject, NSMenuDelegate {
     }
 
     @objc private func selectAnimation(_ sender: NSMenuItem) {
-        guard let rawValue = sender.representedObject as? String,
-              let type = AnimationType(rawValue: rawValue) else { return }
-        appDelegate.configuration.animation = type
+        guard let choice = sender.representedObject as? AnimationChoice else { return }
+        appDelegate.configuration.setAnimation(choice.animation, for: choice.button)
         syncWithConfiguration()
     }
 
@@ -145,7 +164,7 @@ final class MenuManager: NSObject, NSMenuDelegate {
     }
 
     @objc private func showAbout() {
-        NSApp.activate()
+        AppActivation.activate()
         NSApp.orderFrontStandardAboutPanel(nil)
     }
 
@@ -162,14 +181,17 @@ final class MenuManager: NSObject, NSMenuDelegate {
         panel.setTarget(self)
         panel.setAction(#selector(colorPanelDidChange(_:)))
         panel.level = .floating
+        // A menu bar app is rarely the active app, and panels hide themselves when the app is
+        // inactive, so opt out of that or the panel vanishes as soon as it appears.
+        panel.hidesOnDeactivate = false
 
-        // We're a menu bar app with no windows of our own, so we have to activate to show a panel.
-        NSApp.activate()
+        AppActivation.activate()
         panel.center()
         panel.makeKeyAndOrderFront(nil)
     }
 
-    @objc private func colorPanelDidChange(_ panel: NSColorPanel) {
+    /// Target of the colour panel's continuous action. Internal so tests can drive it.
+    @objc func colorPanelDidChange(_ panel: NSColorPanel) {
         appDelegate.configuration.color = panel.color
         colorItem.image = swatchImage(for: panel.color)
     }
@@ -186,7 +208,20 @@ final class MenuManager: NSObject, NSMenuDelegate {
     }
 }
 
+/// Carried by each animation menu item so one action can serve both submenus.
+final class AnimationChoice: NSObject {
+    let button: MouseButton
+    let animation: AnimationType
+
+    init(button: MouseButton, animation: AnimationType) {
+        self.button = button
+        self.animation = animation
+    }
+}
+
 /// A labelled slider with a live value readout, hosted in a menu item.
+/// Laid out with Auto Layout so it stretches to the menu's width and the text lines up
+/// with the other items.
 final class SliderMenuItemView: NSView {
     let menuItem = NSMenuItem()
     var onChange: ((Double) -> Void)?
@@ -203,26 +238,18 @@ final class SliderMenuItemView: NSView {
     private let valueLabel = NSTextField(labelWithString: "")
     private let format: (Double) -> String
 
-    private static let width: CGFloat = 240
-    private static let height: CGFloat = 46
-    private static let inset: CGFloat = 14
-
     init(title: String, range: ClosedRange<Double>, format: @escaping (Double) -> String) {
         self.format = format
-        super.init(frame: NSRect(x: 0, y: 0, width: Self.width, height: Self.height))
-
-        let contentWidth = Self.width - Self.inset * 2
+        super.init(frame: NSRect(x: 0, y: 0, width: AppConstants.MenuBar.sliderRowWidth, height: 46))
+        autoresizingMask = [.width]
 
         let titleLabel = NSTextField(labelWithString: title)
         titleLabel.font = .menuFont(ofSize: 0)
-        titleLabel.frame = NSRect(x: Self.inset, y: 24, width: contentWidth * 0.6, height: 18)
-        addSubview(titleLabel)
 
         valueLabel.font = .monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
         valueLabel.textColor = .secondaryLabelColor
         valueLabel.alignment = .right
-        valueLabel.frame = NSRect(x: Self.inset + contentWidth * 0.6, y: 25, width: contentWidth * 0.4, height: 16)
-        addSubview(valueLabel)
+        valueLabel.setContentHuggingPriority(.required, for: .horizontal)
 
         slider.minValue = range.lowerBound
         slider.maxValue = range.upperBound
@@ -230,8 +257,24 @@ final class SliderMenuItemView: NSView {
         slider.isContinuous = true
         slider.target = self
         slider.action = #selector(sliderMoved)
-        slider.frame = NSRect(x: Self.inset, y: 4, width: contentWidth, height: 20)
-        addSubview(slider)
+
+        for view in [titleLabel, valueLabel, slider] {
+            view.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(view)
+        }
+
+        let leading = AppConstants.MenuBar.sliderLeadingInset
+        let trailing = AppConstants.MenuBar.sliderTrailingInset
+        NSLayoutConstraint.activate([
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: leading),
+            titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 4),
+            valueLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -trailing),
+            valueLabel.firstBaselineAnchor.constraint(equalTo: titleLabel.firstBaselineAnchor),
+            valueLabel.leadingAnchor.constraint(greaterThanOrEqualTo: titleLabel.trailingAnchor, constant: 8),
+            slider.leadingAnchor.constraint(equalTo: leadingAnchor, constant: leading),
+            slider.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -trailing),
+            slider.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4)
+        ])
 
         menuItem.view = self
     }

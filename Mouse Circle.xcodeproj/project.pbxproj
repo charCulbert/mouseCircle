@@ -8,14 +8,49 @@
 
 /* Begin PBXFileReference section */
 		02EB51F52C8141C400178C36 /* Mouse Circle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mouse Circle.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0A0000000000000000000001 /* Mouse CircleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Mouse CircleTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0A0000000000000000000011 /* Mouse CircleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Mouse CircleUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXContainerItemProxy section */
+		0A000000000000000000000B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 02EB51ED2C8141C400178C36 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 02EB51F42C8141C400178C36;
+			remoteInfo = "Mouse Circle";
+		};
+		0A000000000000000000001B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 02EB51ED2C8141C400178C36 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 02EB51F42C8141C400178C36;
+			remoteInfo = "Mouse Circle";
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		02EB51F72C8141C400178C36 /* Mouse Circle */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "Mouse Circle"; sourceTree = "<group>"; };
+		0A0000000000000000000002 /* Mouse CircleTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "Mouse CircleTests"; sourceTree = "<group>"; };
+		0A0000000000000000000012 /* Mouse CircleUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "Mouse CircleUITests"; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		02EB51F22C8141C400178C36 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0A0000000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0A0000000000000000000015 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -29,6 +64,8 @@
 			isa = PBXGroup;
 			children = (
 				02EB51F72C8141C400178C36 /* Mouse Circle */,
+				0A0000000000000000000002 /* Mouse CircleTests */,
+				0A0000000000000000000012 /* Mouse CircleUITests */,
 				02EB51F62C8141C400178C36 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -37,6 +74,8 @@
 			isa = PBXGroup;
 			children = (
 				02EB51F52C8141C400178C36 /* Mouse Circle.app */,
+				0A0000000000000000000001 /* Mouse CircleTests.xctest */,
+				0A0000000000000000000011 /* Mouse CircleUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -66,6 +105,52 @@
 			productReference = 02EB51F52C8141C400178C36 /* Mouse Circle.app */;
 			productType = "com.apple.product-type.application";
 		};
+		0A0000000000000000000003 /* Mouse CircleTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0A0000000000000000000007 /* Build configuration list for PBXNativeTarget "Mouse CircleTests" */;
+			buildPhases = (
+				0A0000000000000000000004 /* Sources */,
+				0A0000000000000000000005 /* Frameworks */,
+				0A0000000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0A000000000000000000000A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0A0000000000000000000002 /* Mouse CircleTests */,
+			);
+			name = "Mouse CircleTests";
+			packageProductDependencies = (
+			);
+			productName = "Mouse CircleTests";
+			productReference = 0A0000000000000000000001 /* Mouse CircleTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		0A0000000000000000000013 /* Mouse CircleUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0A0000000000000000000017 /* Build configuration list for PBXNativeTarget "Mouse CircleUITests" */;
+			buildPhases = (
+				0A0000000000000000000014 /* Sources */,
+				0A0000000000000000000015 /* Frameworks */,
+				0A0000000000000000000016 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0A000000000000000000001A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0A0000000000000000000012 /* Mouse CircleUITests */,
+			);
+			name = "Mouse CircleUITests";
+			packageProductDependencies = (
+			);
+			productName = "Mouse CircleUITests";
+			productReference = 0A0000000000000000000011 /* Mouse CircleUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -78,6 +163,14 @@
 				TargetAttributes = {
 					02EB51F42C8141C400178C36 = {
 						CreatedOnToolsVersion = 16.0;
+					};
+					0A0000000000000000000003 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = 02EB51F42C8141C400178C36;
+					};
+					0A0000000000000000000013 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = 02EB51F42C8141C400178C36;
 					};
 				};
 			};
@@ -95,12 +188,28 @@
 			projectRoot = "";
 			targets = (
 				02EB51F42C8141C400178C36 /* Mouse Circle */,
+				0A0000000000000000000003 /* Mouse CircleTests */,
+				0A0000000000000000000013 /* Mouse CircleUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		02EB51F32C8141C400178C36 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0A0000000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0A0000000000000000000016 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -117,7 +226,34 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0A0000000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0A0000000000000000000014 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0A000000000000000000000A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 02EB51F42C8141C400178C36 /* Mouse Circle */;
+			targetProxy = 0A000000000000000000000B /* PBXContainerItemProxy */;
+		};
+		0A000000000000000000001A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 02EB51F42C8141C400178C36 /* Mouse Circle */;
+			targetProxy = 0A000000000000000000001B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		02EB52022C8141C600178C36 /* Debug */ = {
@@ -304,6 +440,76 @@
 			};
 			name = Release;
 		};
+		0A0000000000000000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircleTests;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Mouse Circle.app/Contents/MacOS/Mouse Circle";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U2G8C755H7;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		0A0000000000000000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircleTests;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Mouse Circle.app/Contents/MacOS/Mouse Circle";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U2G8C755H7;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		0A0000000000000000000018 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircleUITests;
+				TEST_TARGET_NAME = "Mouse Circle";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U2G8C755H7;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		0A0000000000000000000019 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircleUITests;
+				TEST_TARGET_NAME = "Mouse Circle";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U2G8C755H7;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -321,6 +527,24 @@
 			buildConfigurations = (
 				02EB52052C8141C600178C36 /* Debug */,
 				02EB52062C8141C600178C36 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0A0000000000000000000007 /* Build configuration list for PBXNativeTarget "Mouse CircleTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0A0000000000000000000008 /* Debug */,
+				0A0000000000000000000009 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0A0000000000000000000017 /* Build configuration list for PBXNativeTarget "Mouse CircleUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0A0000000000000000000018 /* Debug */,
+				0A0000000000000000000019 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
