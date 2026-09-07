@@ -133,6 +133,10 @@ final class ShortcutRecorderView: NSView {
 
     override var intrinsicContentSize: NSSize { NSSize(width: 170, height: 24) }
     override var acceptsFirstResponder: Bool { true }
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .button }
+    override func accessibilityLabel() -> String? { "Shortcut" }
+    override func accessibilityValue() -> Any? { displayText }
     /// Let the first click start recording even if the app wasn't active yet.
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override var focusRingMaskBounds: NSRect { bounds }
@@ -200,6 +204,11 @@ final class ShortcutRecorderView: NSView {
         onChange?(candidate)
     }
 
+    private var displayText: String {
+        if isRecording { return "Type shortcut…" }
+        return hotKey?.displayString ?? "Click to record"
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 6, yRadius: 6)
         NSColor.controlBackgroundColor.setFill()
@@ -208,18 +217,8 @@ final class ShortcutRecorderView: NSView {
         path.lineWidth = isRecording ? 1.5 : 1
         path.stroke()
 
-        let text: String
-        let color: NSColor
-        if isRecording {
-            text = "Type shortcut…"
-            color = .secondaryLabelColor
-        } else if let hotKey {
-            text = hotKey.displayString
-            color = .labelColor
-        } else {
-            text = "Click to record"
-            color = .secondaryLabelColor
-        }
+        let text = displayText
+        let color: NSColor = hotKey != nil && !isRecording ? .labelColor : .secondaryLabelColor
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: NSFont.systemFontSize),
             .foregroundColor: color

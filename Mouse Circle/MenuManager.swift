@@ -21,6 +21,7 @@ final class MenuManager: NSObject, NSMenuDelegate {
     private let launchAtLoginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
     /// One radio group per mouse button, keyed by button then animation.
     private var animationItems: [MouseButton: [AnimationType: NSMenuItem]] = [:]
+    private var animationParentItems: [MouseButton: NSMenuItem] = [:]
     private lazy var shortcutSettings = ShortcutSettingsWindowController(appDelegate: appDelegate)
 
     init(appDelegate: AppDelegate) {
@@ -55,6 +56,7 @@ final class MenuManager: NSObject, NSMenuDelegate {
         for button in MouseButton.allCases {
             let item = makeItem(button.displayName, symbol: button.symbolName, action: nil)
             item.submenu = makeAnimationSubmenu(for: button)
+            animationParentItems[button] = item
             menu.addItem(item)
         }
         intensitySlider.onChange = { [unowned self] in appDelegate.configuration.intensity = $0 }
@@ -108,9 +110,12 @@ final class MenuManager: NSObject, NSMenuDelegate {
         intensitySlider.value = configuration.intensity
         colorItem.image = swatchImage(for: configuration.color)
         for (button, items) in animationItems {
+            let current = configuration.animation(for: button)
             for (type, item) in items {
-                item.state = type == configuration.animation(for: button) ? .on : .off
+                item.state = type == current ? .on : .off
             }
+            // The current choice is visible without opening the submenu.
+            animationParentItems[button]?.badge = NSMenuItemBadge(string: current.displayName)
         }
         launchAtLoginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
     }
@@ -245,6 +250,7 @@ final class SliderMenuItemView: NSView {
 
         let titleLabel = NSTextField(labelWithString: title)
         titleLabel.font = .menuFont(ofSize: 0)
+        valueLabel.setAccessibilityIdentifier("\(title) value")
 
         valueLabel.font = .monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
         valueLabel.textColor = .secondaryLabelColor
@@ -257,6 +263,7 @@ final class SliderMenuItemView: NSView {
         slider.isContinuous = true
         slider.target = self
         slider.action = #selector(sliderMoved)
+        slider.setAccessibilityLabel(title)
 
         for view in [titleLabel, valueLabel, slider] {
             view.translatesAutoresizingMaskIntoConstraints = false

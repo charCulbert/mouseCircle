@@ -6,12 +6,6 @@
 	objectVersion = 70;
 	objects = {
 
-/* Begin PBXFileReference section */
-		02EB51F52C8141C400178C36 /* Mouse Circle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mouse Circle.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		0A0000000000000000000001 /* Mouse CircleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Mouse CircleTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		0A0000000000000000000011 /* Mouse CircleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Mouse CircleUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
-
 /* Begin PBXContainerItemProxy section */
 		0A000000000000000000000B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -28,6 +22,12 @@
 			remoteInfo = "Mouse Circle";
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		02EB51F52C8141C400178C36 /* Mouse Circle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mouse Circle.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0A0000000000000000000001 /* Mouse CircleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Mouse CircleTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0A0000000000000000000011 /* Mouse CircleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Mouse CircleUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		02EB51F72C8141C400178C36 /* Mouse Circle */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "Mouse Circle"; sourceTree = "<group>"; };
@@ -444,17 +444,17 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircleTests;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Mouse Circle.app/Contents/MacOS/Mouse Circle";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = U2G8C755H7;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircleTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Mouse Circle.app/Contents/MacOS/Mouse Circle";
 			};
 			name = Debug;
 		};
@@ -462,51 +462,51 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircleTests;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Mouse Circle.app/Contents/MacOS/Mouse Circle";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = U2G8C755H7;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircleTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Mouse Circle.app/Contents/MacOS/Mouse Circle";
 			};
 			name = Release;
 		};
 		0A0000000000000000000018 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircleUITests;
-				TEST_TARGET_NAME = "Mouse Circle";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = U2G8C755H7;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircleUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = "Mouse Circle";
 			};
 			name = Debug;
 		};
 		0A0000000000000000000019 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircleUITests;
-				TEST_TARGET_NAME = "Mouse Circle";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = U2G8C755H7;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.charlieculbert.MouseCircleUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = "Mouse Circle";
 			};
 			name = Release;
 		};

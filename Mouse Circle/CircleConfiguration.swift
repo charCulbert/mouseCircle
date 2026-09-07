@@ -48,14 +48,14 @@ struct CircleConfiguration: Equatable {
 
     // MARK: Persistence
 
-    static func load(from defaults: UserDefaults = .standard) -> CircleConfiguration {
+    static func load(from defaults: UserDefaults = .app) -> CircleConfiguration {
         guard let data = defaults.data(forKey: AppConstants.Storage.configurationKey),
               let configuration = try? JSONDecoder().decode(CircleConfiguration.self, from: data)
         else { return CircleConfiguration() }
         return configuration
     }
 
-    func save(to defaults: UserDefaults = .standard) {
+    func save(to defaults: UserDefaults = .app) {
         guard let data = try? JSONEncoder().encode(self) else { return }
         defaults.set(data, forKey: AppConstants.Storage.configurationKey)
     }
@@ -96,4 +96,21 @@ extension CircleConfiguration: Codable {
         try container.encode(shortcut, forKey: .shortcut)   // encodes null when nil
         try container.encode(rgba, forKey: .rgba)
     }
+}
+
+extension UserDefaults {
+    /// Where settings live. UI tests launch the app with `--settings-suite NAME` so they never
+    /// touch the user's real settings, and `--reset-settings` to start from defaults.
+    static let app: UserDefaults = {
+        let arguments = CommandLine.arguments
+        var defaults = UserDefaults.standard
+        if let index = arguments.firstIndex(of: "--settings-suite"), index + 1 < arguments.count,
+           let suite = UserDefaults(suiteName: arguments[index + 1]) {
+            defaults = suite
+        }
+        if arguments.contains("--reset-settings") {
+            defaults.removeObject(forKey: AppConstants.Storage.configurationKey)
+        }
+        return defaults
+    }()
 }
