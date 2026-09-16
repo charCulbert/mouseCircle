@@ -25,9 +25,9 @@ enum AppConstants {
     }
 
     enum Window {
-        /// The shielding level sits above full-screen apps, menus, the Dock, the menu bar
-        /// and the screen saver, so the circle is visible over everything on screen.
-        static let overlayLevel = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
+        /// High enough to sit above full-screen apps, menus, the Dock and the menu bar,
+        /// but below protected system interfaces such as Screenshot's window picker.
+        static let overlayLevel = NSWindow.Level.screenSaver
         static let collectionBehavior: NSWindow.CollectionBehavior = [
             .canJoinAllSpaces,      // Follow the user across Spaces
             .fullScreenAuxiliary,   // Show over other apps' full-screen windows
