@@ -23,9 +23,7 @@ Handy when other people need to follow your pointer:
 
 ## Install
 
-Grab the latest build from [Releases](../../releases), unzip, and drag **Mouse Circle** to your Applications folder.
-
-Or build it yourself: open `Mouse Circle.xcodeproj` in Xcode and press Run. Requires macOS 15 or later.
+Get **Mouse Circle** from the Mac App Store, or build it yourself: open `Mouse Circle.xcodeproj` in Xcode and press Run. Requires macOS 15 or later.
 
 No special permissions are needed. The app only listens for mouse movement and clicks, never keystrokes.
 
@@ -34,14 +32,6 @@ No special permissions are needed. The app only listens for mouse movement and c
 Click the ring icon in the menu bar to adjust the circle. Everything updates live while the menu is open.
 
 Press ⌃⌥⌘M to hide or show the circle from anywhere. Hold the shortcut instead of tapping it and the circle only flips while the key is down, coming back when you let go. Choose **Keyboard Shortcut…** in the menu to record a different key.
-
-## Development
-
-Open `Mouse Circle.xcodeproj` and press Run. Tests live in two targets: **Mouse CircleTests** runs inside the real app and drives the menu, overlay windows, colour panel and shortcut directly, and **Mouse CircleUITests** launches the app and clicks through the menu bar like a user. Run both with Cmd+U in Xcode, or:
-
-```
-xcodebuild test -project "Mouse Circle.xcodeproj" -scheme "Mouse Circle" -destination 'platform=macOS'
-```
 
 ## License
 
