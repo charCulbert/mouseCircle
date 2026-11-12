@@ -38,9 +38,6 @@ jobs:
     name: UI tests
     runs-on: macos-26
     timeout-minutes: 30
-    # Menu bar clicks and global hotkeys are unproven on a hosted runner,
-    # so a failure here does not fail the workflow yet.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Test
