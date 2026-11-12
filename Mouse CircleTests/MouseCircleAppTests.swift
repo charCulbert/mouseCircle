@@ -77,7 +77,7 @@ final class MouseCircleAppTests: XCTestCase {
         for window in overlayWindows {
             XCTAssertTrue(window.isVisible)
             XCTAssertEqual(window.level, AppConstants.Window.overlayLevel)
-            XCTAssertGreaterThan(window.level.rawValue, NSWindow.Level.screenSaver.rawValue, "Must sit above full-screen apps and menus")
+            XCTAssertGreaterThan(window.level.rawValue, NSWindow.Level.popUpMenu.rawValue, "Must sit above full-screen apps and menus")
             XCTAssertTrue(window.ignoresMouseEvents, "Must be click-through")
             XCTAssertTrue(window.collectionBehavior.contains(.canJoinAllSpaces))
             XCTAssertTrue(window.collectionBehavior.contains(.fullScreenAuxiliary))
