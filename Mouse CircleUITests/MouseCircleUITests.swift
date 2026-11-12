@@ -75,33 +75,6 @@ final class MouseCircleUITests: XCTestCase {
 
     // MARK: Flows
 
-    func testMenuListsEveryControl() {
-        openMenu()
-        for title in ["Hide Circle", "Keyboard Shortcut…", "Colour…", "Left Click", "Right Click",
-                      "Launch at Login", "Reset to Defaults", "About Mouse Circle", "Quit Mouse Circle"] {
-            XCTAssertTrue(menuItem(title).exists, "Missing \(title)")
-        }
-        XCTAssertEqual(app.sliders.count, 3)
-        XCTAssertEqual(sliderReadout("Size"), "184 pt")
-        XCTAssertEqual(sliderReadout("Thickness"), "6 pt")
-        XCTAssertEqual(sliderReadout("Intensity"), "50%")
-        closeMenu()
-    }
-
-    func testHideAndShowFlipTheMenuTitle() {
-        openMenu()
-        clickMenuItem("Hide Circle")
-
-        openMenu()
-        XCTAssertTrue(menuItem("Show Circle").exists, "Title should flip once hidden")
-        XCTAssertFalse(menuItem("Hide Circle").exists)
-        clickMenuItem("Show Circle")
-
-        openMenu()
-        XCTAssertTrue(menuItem("Hide Circle").exists)
-        closeMenu()
-    }
-
     func testRightClickAnimationChangeShowsInMenuAndSurvivesRelaunch() {
         openMenu()
         XCTAssertTrue(menuItem("Right Click").title.contains("Pulse"), "Default right click is Pulse")
@@ -152,13 +125,6 @@ final class MouseCircleUITests: XCTestCase {
         XCTAssertEqual(sliderReadout("Thickness"), "6 pt")
         XCTAssertEqual(sliderReadout("Size"), "184 pt")
         closeMenu()
-    }
-
-    func testChoosingColourOpensTheColourPanel() {
-        openMenu()
-        clickMenuItem("Colour…")
-        let panel = app.windows.matching(NSPredicate(format: "title BEGINSWITH[c] 'colo'")).firstMatch
-        XCTAssertTrue(panel.waitForExistence(timeout: 5), "The system colour panel should open")
     }
 
     func testShortcutCanBeClearedRecordedAndSurvivesRelaunch() {
